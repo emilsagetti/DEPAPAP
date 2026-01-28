@@ -22,17 +22,17 @@ const MessageBubble = ({ message, isOwn }) => {
         >
             <div
                 className={`relative max-w-[75%] ${isOwn
-                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-[20px] rounded-br-[6px]'
-                    : 'bg-white text-slate-800 rounded-[20px] rounded-bl-[6px] shadow-sm border border-slate-100'
+                    ? 'bg-gradient-to-br from-[#06B6D4] to-[#0891B2] text-white rounded-[20px] rounded-br-[6px] shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
+                    : 'bg-[#1E293B] border border-white/10 text-slate-200 rounded-[20px] rounded-bl-[6px] shadow-sm'
                     }`}
             >
                 <div className="px-4 py-2.5">
                     <p className="text-[15px] leading-[1.45] whitespace-pre-wrap">{message.content}</p>
                 </div>
-                <div className={`flex items-center justify-end gap-1 px-3 pb-2 -mt-0.5 ${isOwn ? 'text-white/70' : 'text-slate-400'
+                <div className={`flex items-center justify-end gap-1 px-3 pb-2 -mt-0.5 ${isOwn ? 'text-white/70' : 'text-slate-500'
                     }`}>
-                    <span className="text-[11px]">{time}</span>
-                    {isOwn && (message.isRead ? <CheckCheck size={14} /> : <Check size={14} />)}
+                    <span className="text-[11px] font-medium">{time}</span>
+                    {isOwn && (message.isRead ? <CheckCheck size={14} className="text-white/90" /> : <Check size={14} />)}
                 </div>
             </div>
         </motion.div>
@@ -86,52 +86,54 @@ const LawyerChatPage = () => {
     };
 
     return (
-        <div className="flex gap-6 h-[calc(100vh-180px)]">
+        <div className="flex gap-6 h-[calc(100vh-140px)]">
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 flex flex-col bg-[#0F172A]/40 backdrop-blur-xl border border-white/10 rounded-[24px] overflow-hidden shadow-2xl shadow-black/20">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0F172A]/30">
                     <div className="flex items-center gap-4">
                         <Link
                             to="/lawyer/chats"
-                            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                            className="p-2.5 hover:bg-white/5 rounded-xl transition-colors text-slate-400 hover:text-white"
                         >
-                            <ArrowLeft size={20} className="text-slate-500" />
+                            <ArrowLeft size={20} />
                         </Link>
                         <div className="relative">
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-white/10 flex items-center justify-center text-white font-bold text-lg">
                                 {client.name[0]}
                             </div>
                             {client.online && (
-                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#0F172A] rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
                             )}
                         </div>
                         <div>
-                            <h2 className="font-semibold text-slate-900">{client.name}</h2>
-                            <p className="text-xs text-slate-500">
+                            <h2 className="font-semibold text-white text-lg leading-tight">{client.name}</h2>
+                            <p className="text-xs font-medium text-[#06B6D4]">
                                 {client.online ? 'В сети' : 'Не в сети'}
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="p-2.5 hover:bg-slate-100 rounded-xl transition-colors">
-                            <Phone size={18} className="text-slate-500" />
+                        <button className="p-2.5 hover:bg-white/5 rounded-xl transition-colors text-slate-400 hover:text-white">
+                            <Phone size={20} />
                         </button>
-                        <button className="p-2.5 hover:bg-slate-100 rounded-xl transition-colors">
-                            <Video size={18} className="text-slate-500" />
+                        <button className="p-2.5 hover:bg-white/5 rounded-xl transition-colors text-slate-400 hover:text-white">
+                            <Video size={20} />
                         </button>
                         <button
                             onClick={() => setShowClientInfo(!showClientInfo)}
-                            className={`p-2.5 rounded-xl transition-colors ${showClientInfo ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-500'
+                            className={`p-2.5 rounded-xl transition-all ${showClientInfo
+                                    ? 'bg-[#06B6D4] text-white shadow-lg shadow-cyan-500/20'
+                                    : 'hover:bg-white/5 text-slate-400 hover:text-white'
                                 }`}
                         >
-                            <User size={18} />
+                            <User size={20} />
                         </button>
                     </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-5 bg-slate-50">
+                <div className="flex-1 overflow-y-auto p-6 bg-transparent custom-scrollbar">
                     <AnimatePresence>
                         {messages.map((msg) => (
                             <MessageBubble
@@ -145,28 +147,28 @@ const LawyerChatPage = () => {
                 </div>
 
                 {/* Input */}
-                <div className="px-5 py-4 border-t border-slate-100">
+                <div className="px-6 py-5 border-t border-white/5 bg-[#0F172A]/30">
                     <form onSubmit={handleSend} className="flex items-center gap-3">
-                        <button type="button" className="p-2.5 hover:bg-slate-100 rounded-xl transition-colors">
-                            <Paperclip size={20} className="text-slate-400" />
+                        <button type="button" className="p-3 hover:bg-white/5 rounded-xl transition-colors text-slate-400 hover:text-white">
+                            <Paperclip size={20} />
                         </button>
                         <input
                             type="text"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             placeholder="Написать сообщение..."
-                            className="flex-1 py-2.5 px-4 bg-slate-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="flex-1 py-3 px-5 bg-white/5 border border-white/5 rounded-2xl focus:outline-none focus:bg-white/10 focus:border-[#06B6D4]/50 text-white placeholder-slate-500 transition-all"
                         />
                         <motion.button
                             type="submit"
                             disabled={!message.trim()}
                             whileTap={{ scale: 0.95 }}
-                            className={`p-2.5 rounded-full transition-all ${message.trim()
-                                    ? 'bg-depa-cta text-white shadow-lg shadow-blue-500/30'
-                                    : 'bg-slate-100 text-slate-400'
+                            className={`p-3 rounded-xl transition-all ${message.trim()
+                                ? 'bg-[#06B6D4] hover:bg-[#0891B2] text-white shadow-lg shadow-cyan-500/20'
+                                : 'bg-white/5 text-slate-600 cursor-not-allowed'
                                 }`}
                         >
-                            <Send size={18} />
+                            <Send size={20} />
                         </motion.button>
                     </form>
                 </div>
@@ -176,68 +178,80 @@ const LawyerChatPage = () => {
             <AnimatePresence>
                 {showClientInfo && (
                     <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: 320 }}
-                        exit={{ opacity: 0, width: 0 }}
-                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex-shrink-0"
+                        initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                        animate={{ opacity: 1, width: 340, marginLeft: 0 }}
+                        exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                        className="bg-[#0F172A]/40 backdrop-blur-xl border border-white/10 rounded-[24px] overflow-hidden flex-shrink-0 shadow-2xl shadow-black/20"
                     >
-                        <div className="p-5">
+                        <div className="p-6 w-[340px]">
                             {/* Client Avatar */}
-                            <div className="text-center mb-5">
-                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">
+                            <div className="text-center mb-6 pt-4">
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-white/10 flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg shadow-black/20">
                                     {client.name[0]}
                                 </div>
-                                <h3 className="font-semibold text-slate-900">{client.name}</h3>
+                                <h3 className="text-xl font-bold text-white mb-1">{client.name}</h3>
                                 {client.company && (
-                                    <p className="text-sm text-slate-500">{client.company}</p>
+                                    <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-medium text-slate-400">
+                                        {client.company}
+                                    </span>
                                 )}
                             </div>
 
                             {/* Client Details */}
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                    <Building2 size={18} className="text-slate-400" />
+                            <div className="space-y-3 mb-6">
+                                <div className="flex items-center gap-3 p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.06] transition-colors group">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-[#06B6D4] transition-colors">
+                                        <Building2 size={18} />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-slate-400">ИНН</p>
-                                        <p className="text-sm font-medium text-slate-700">{client.inn}</p>
+                                        <p className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">ИНН</p>
+                                        <p className="text-sm font-medium text-slate-200">{client.inn}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                    <User size={18} className="text-slate-400" />
+                                <div className="flex items-center gap-3 p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.06] transition-colors group">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-[#06B6D4] transition-colors">
+                                        <User size={18} />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-slate-400">Email</p>
-                                        <p className="text-sm font-medium text-slate-700">{client.email}</p>
+                                        <p className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">Email</p>
+                                        <p className="text-sm font-medium text-slate-200">{client.email}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                    <Phone size={18} className="text-slate-400" />
+                                <div className="flex items-center gap-3 p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.06] transition-colors group">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-[#06B6D4] transition-colors">
+                                        <Phone size={18} />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-slate-400">Телефон</p>
-                                        <p className="text-sm font-medium text-slate-700">{client.phone}</p>
+                                        <p className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">Телефон</p>
+                                        <p className="text-sm font-medium text-slate-200">{client.phone}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                    <Clock size={18} className="text-slate-400" />
+                                <div className="flex items-center gap-3 p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.06] transition-colors group">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-[#06B6D4] transition-colors">
+                                        <Clock size={18} />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-slate-400">Клиент с</p>
-                                        <p className="text-sm font-medium text-slate-700">{client.registeredAt}</p>
+                                        <p className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">Клиент с</p>
+                                        <p className="text-sm font-medium text-slate-200">{client.registeredAt}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                    <FileText size={18} className="text-slate-400" />
+                                <div className="flex items-center gap-3 p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.06] transition-colors group">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-[#06B6D4] transition-colors">
+                                        <FileText size={18} />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-slate-400">Заказов</p>
-                                        <p className="text-sm font-medium text-slate-700">{client.ordersCount}</p>
+                                        <p className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">Заказов</p>
+                                        <p className="text-sm font-medium text-slate-200">{client.ordersCount}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Actions */}
-                            <div className="mt-5 space-y-2">
-                                <button className="w-full py-2.5 bg-depa-cta hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
+                            <div className="space-y-3 pt-2">
+                                <button className="w-full py-3 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-medium rounded-xl transition-all shadow-lg shadow-cyan-500/20 hover:scale-[1.02] active:scale-[0.98]">
                                     Профиль клиента
                                 </button>
-                                <button className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors">
+                                <button className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
                                     История заказов
                                 </button>
                             </div>

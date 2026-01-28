@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileText, Upload, Download, Trash2, Search,
     Folder, File, Eye, Plus, Filter, MoreVertical,
-    FileSpreadsheet, Image, FileType
+    FileSpreadsheet, Image, FileType, X
 } from 'lucide-react';
 
 const LawyerDocuments = () => {
@@ -31,10 +31,10 @@ const LawyerDocuments = () => {
 
     const getFileIcon = (type) => {
         switch (type) {
-            case 'pdf': return <FileType className="text-red-500" size={20} />;
-            case 'doc': return <FileText className="text-blue-500" size={20} />;
-            case 'xls': return <FileSpreadsheet className="text-green-500" size={20} />;
-            case 'img': return <Image className="text-purple-500" size={20} />;
+            case 'pdf': return <FileType className="text-red-400" size={20} />;
+            case 'doc': return <FileText className="text-blue-400" size={20} />;
+            case 'xls': return <FileSpreadsheet className="text-green-400" size={20} />;
+            case 'img': return <Image className="text-purple-400" size={20} />;
             default: return <File className="text-slate-400" size={20} />;
         }
     };
@@ -60,42 +60,44 @@ const LawyerDocuments = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Документы</h1>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Документы</h1>
                     <p className="text-slate-500">Управление файлами и шаблонами</p>
                 </div>
                 <button
                     onClick={() => setShowUpload(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-depa-cta hover:bg-blue-700 text-white font-medium rounded-xl transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#06B6D4] hover:bg-[#06B6D4]/90 text-white font-bold rounded-xl shadow-lg shadow-[#06B6D4]/20 transition-all"
                 >
                     <Upload size={18} />
                     Загрузить
                 </button>
             </div>
 
-            <div className="flex gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
                 {/* Sidebar - Folders */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="w-64 flex-shrink-0"
+                    className="w-full lg:w-64 flex-shrink-0"
                 >
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-                        <h3 className="font-semibold text-slate-900 mb-3 px-2">Папки</h3>
+                    <div className="bg-white/[0.03] border border-white/10 rounded-[24px] p-4 backdrop-blur-xl">
+                        <h3 className="font-bold text-slate-400 mb-3 px-3 uppercase text-xs tracking-wider">Папки</h3>
                         <div className="space-y-1">
                             {folders.map((folder) => (
                                 <button
                                     key={folder.id}
                                     onClick={() => setSelectedFolder(folder.id)}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors ${selectedFolder === folder.id
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-slate-600 hover:bg-slate-50'
+                                    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-left transition-all ${selectedFolder === folder.id
+                                        ? 'bg-[#06B6D4] text-white shadow-lg shadow-[#06B6D4]/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <Folder size={18} className={selectedFolder === folder.id ? 'text-blue-500' : 'text-slate-400'} />
-                                        <span className="text-sm font-medium">{folder.name}</span>
+                                        <Folder size={18} className={selectedFolder === folder.id ? 'text-white' : 'text-slate-400'} />
+                                        <span className="text-sm font-bold">{folder.name}</span>
                                     </div>
-                                    <span className="text-xs text-slate-400">{folder.count}</span>
+                                    <span className={`text-xs font-medium ${selectedFolder === folder.id ? 'text-white/80' : 'text-slate-600'}`}>
+                                        {folder.count}
+                                    </span>
                                 </button>
                             ))}
                         </div>
@@ -105,72 +107,82 @@ const LawyerDocuments = () => {
                 {/* Main Content - Documents List */}
                 <div className="flex-1">
                     {/* Search */}
-                    <div className="mb-4">
-                        <div className="relative">
-                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Поиск документов..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            />
-                        </div>
+                    <div className="mb-6 relative group">
+                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#06B6D4] transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="Поиск документов..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl focus:outline-none focus:bg-white/[0.05] focus:border-[#06B6D4]/50 text-white placeholder-slate-600 transition-all font-medium"
+                        />
                     </div>
 
                     {/* Documents Table */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-100">
-                                <tr>
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Название</th>
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Клиент</th>
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Размер</th>
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Дата</th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredDocs.map((doc, i) => (
-                                    <motion.tr
-                                        key={doc.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: i * 0.03 }}
-                                        className="hover:bg-slate-50 transition-colors"
-                                    >
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-3">
-                                                {getFileIcon(doc.type)}
-                                                <span className="font-medium text-slate-900">{doc.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-slate-500">{doc.client || '—'}</span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-slate-500">{doc.size}</span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className="text-sm text-slate-500">{doc.date}</span>
-                                        </td>
-                                        <td className="px-5 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                                                    <Eye size={16} className="text-slate-400" />
-                                                </button>
-                                                <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                                                    <Download size={16} className="text-slate-400" />
-                                                </button>
-                                                <button className="p-2 hover:bg-red-100 rounded-lg transition-colors">
-                                                    <Trash2 size={16} className="text-slate-400" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="bg-[#0F172A]/40 rounded-[24px] border border-white/10 backdrop-blur-xl overflow-hidden min-h-[400px]">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-white/[0.02] border-b border-white/5">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Название</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Клиент</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Размер</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Дата</th>
+                                        <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {filteredDocs.map((doc, i) => (
+                                        <motion.tr
+                                            key={doc.id}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: i * 0.03 }}
+                                            className="hover:bg-white/[0.02] transition-colors group"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-2 bg-white/5 rounded-lg border border-white/5 group-hover:border-white/10 transition-colors">
+                                                        {getFileIcon(doc.type)}
+                                                    </div>
+                                                    <span className="font-bold text-sm text-slate-200 group-hover:text-white transition-colors">
+                                                        {doc.name}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm text-slate-400 font-medium">{doc.client || '—'}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm text-slate-500 font-medium">{doc.size}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm text-slate-500 font-medium">{doc.date}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-colors">
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button className="p-2 hover:bg-white/10 text-slate-400 hover:text-[#06B6D4] rounded-lg transition-colors">
+                                                        <Download size={16} />
+                                                    </button>
+                                                    <button className="p-2 hover:bg-red-500/10 text-slate-400 hover:text-red-400 rounded-lg transition-colors">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {filteredDocs.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                                <Search size={48} className="mb-4 opacity-50" />
+                                <p>Документы не найдены</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -182,7 +194,7 @@ const LawyerDocuments = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-[#050B14]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                         onClick={() => setShowUpload(false)}
                     >
                         <motion.div
@@ -190,35 +202,46 @@ const LawyerDocuments = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl"
+                            className="bg-[#0F172A] border border-white/10 rounded-[24px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
                         >
-                            <h3 className="text-lg font-semibold text-slate-900 mb-4">Загрузить документ</h3>
+                            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
 
-                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center mb-4 hover:border-blue-400 transition-colors cursor-pointer">
-                                <Upload size={40} className="mx-auto text-slate-300 mb-3" />
-                                <p className="text-slate-600 mb-1">Перетащите файл сюда</p>
-                                <p className="text-sm text-slate-400">или нажмите для выбора</p>
+                            <div className="relative z-10 flex items-center justify-between mb-8">
+                                <h3 className="text-xl font-bold text-white">Загрузить документ</h3>
+                                <button onClick={() => setShowUpload(false)} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
+                                    <X size={20} />
+                                </button>
                             </div>
 
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Папка</label>
-                                <select className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                                    {folders.filter(f => f.id !== 'all').map(folder => (
-                                        <option key={folder.id} value={folder.id}>{folder.name}</option>
-                                    ))}
-                                </select>
+                            <div className="relative z-10 border-2 border-dashed border-white/10 rounded-2xl p-8 text-center mb-6 hover:border-[#06B6D4]/50 hover:bg-white/[0.02] transition-all cursor-pointer group">
+                                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Upload size={32} className="text-slate-400 group-hover:text-[#06B6D4] transition-colors" />
+                                </div>
+                                <p className="text-white font-medium mb-1">Перетащите файл сюда</p>
+                                <p className="text-sm text-slate-500">или нажмите для выбора</p>
                             </div>
 
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowUpload(false)}
-                                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors"
-                                >
-                                    Отмена
-                                </button>
-                                <button className="flex-1 py-2.5 bg-depa-cta hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
-                                    Загрузить
-                                </button>
+                            <div className="relative z-10 space-y-5">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-400 mb-2">Папка</label>
+                                    <select className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl focus:outline-none focus:bg-white/[0.05] focus:border-[#06B6D4]/50 text-white transition-all font-medium appearance-none cursor-pointer">
+                                        {folders.filter(f => f.id !== 'all').map(folder => (
+                                            <option key={folder.id} value={folder.id} className="bg-[#0F172A]">{folder.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        onClick={() => setShowUpload(false)}
+                                        className="flex-1 py-3 bg-white/[0.05] hover:bg-white/[0.1] text-white font-bold rounded-xl transition-colors"
+                                    >
+                                        Отмена
+                                    </button>
+                                    <button className="flex-1 py-3 bg-[#06B6D4] hover:bg-[#06B6D4]/90 text-white font-bold rounded-xl transition-colors shadow-lg shadow-[#06B6D4]/20">
+                                        Загрузить
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>

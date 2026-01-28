@@ -58,7 +58,7 @@ import DirectorAnalytics from './pages/backoffice/DirectorAnalytics';
 import DirectorFinance from './pages/backoffice/DirectorFinance';
 import DirectorTeam from './pages/backoffice/DirectorTeam';
 import LawyerDocuments from './pages/backoffice/LawyerDocuments';
-import LawyerCalendar from './pages/backoffice/LawyerCalendar';
+import LawyerPlanner from './pages/backoffice/LawyerPlanner';
 import BackofficeSettings from './pages/backoffice/BackofficeSettings';
 import AdminReports from './pages/backoffice/AdminReports';
 import AdminLogs from './pages/backoffice/AdminLogs';
@@ -175,18 +175,14 @@ function App() {
               {/* Lawyer Panel */}
               <Route
                 path="/lawyer"
-                element={
-                  <RoleProtectedRoute allowedRoles={['lawyer', 'director']}>
-                    <BackofficeLayout />
-                  </RoleProtectedRoute>
-                }
+                element={<BackofficeLayout />}
               >
                 <Route index element={<LawyerDashboard />} />
                 <Route path="chats" element={<LawyerChatList />} />
                 <Route path="chat/:id" element={<LawyerChatPage />} />
                 <Route path="clients" element={<LawyerClients />} />
                 <Route path="documents" element={<LawyerDocuments />} />
-                <Route path="calendar" element={<LawyerCalendar />} />
+                <Route path="planner" element={<LawyerPlanner />} />
                 <Route path="settings" element={<BackofficeSettings />} />
               </Route>
 

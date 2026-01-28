@@ -9,9 +9,8 @@ import {
     Settings,
     LogOut,
     Bell,
-    ChevronLeft,
-    ChevronRight,
-    Shield,
+    CheckCircle,
+    AlertCircle,
     Newspaper,
     Tag,
     BarChart3,
@@ -19,8 +18,7 @@ import {
     UserCog,
     FolderOpen,
     Calendar,
-    CheckCircle,
-    AlertCircle
+    Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
@@ -32,7 +30,7 @@ const roleMenus = {
         { id: 'chats', label: 'Чаты', icon: MessageSquare, path: '/lawyer/chats', badge: true },
         { id: 'clients', label: 'Мои клиенты', icon: Users, path: '/lawyer/clients' },
         { id: 'documents', label: 'Документы', icon: FolderOpen, path: '/lawyer/documents' },
-        { id: 'calendar', label: 'Календарь', icon: Calendar, path: '/lawyer/calendar' },
+        { id: 'planner', label: 'Планировщик', icon: Calendar, path: '/lawyer/planner' },
         { id: 'settings', label: 'Настройки', icon: Settings, path: '/lawyer/settings' },
     ],
     admin: [
@@ -71,18 +69,17 @@ const roleTitles = {
 };
 
 const roleColors = {
-    lawyer: 'from-blue-500 to-blue-600',
+    lawyer: 'from-blue-500 to-cyan-500',
     admin: 'from-red-500 to-red-600',
-    content_manager: 'from-purple-500 to-purple-600',
-    director: 'from-amber-500 to-amber-600',
+    content_manager: 'from-purple-500 to-pink-500',
+    director: 'from-amber-400 to-orange-500',
 };
 
 const BackofficeLayout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [collapsed, setCollapsed] = useState(false);
-    const [unreadChats, setUnreadChats] = useState(3); // TODO: From WebSocket
+    const [unreadChats, setUnreadChats] = useState(3);
 
     const userRole = user?.role || 'lawyer';
     const menuItems = roleMenus[userRole] || roleMenus.lawyer;
@@ -101,90 +98,79 @@ const BackofficeLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-depa-bg flex">
-            {/* Sidebar with smooth animation */}
-            <motion.aside
-                initial={false}
-                animate={{ width: collapsed ? 80 : 256 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className="bg-depa-dark border-r border-depa-dark flex flex-col fixed h-screen z-40"
+        <div className="min-h-screen bg-[#050B14] flex text-slate-300 font-sans selection:bg-cyan-500/30">
+            {/* AMBIENT GLOW - Deeper and smoother */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#06B6D4]/5 rounded-full blur-[150px] opacity-40 pointer-events-none" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px] opacity-40 pointer-events-none" />
+            </div>
+
+            {/* SIDEBAR - Fixed width, premium glass */}
+            <aside
+                className="relative z-50 w-[280px] h-screen flex flex-col border-r border-white/5 bg-[#0F172A]/60 backdrop-blur-2xl shadow-[5px_0_30px_rgba(0,0,0,0.2)]"
             >
-                {/* Logo with smooth morphing animation */}
-                <div className="p-4 border-b border-depa-muted/20 flex items-center justify-center min-h-[68px]">
-                    <Link to="/" className="block">
-                        <Logo collapsed={collapsed} light />
+                {/* Logo Area */}
+                <div className="h-24 flex items-center justify-center border-b border-white/5 relative">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+                    <Link to="/" className="relative z-10 block transform-gpu hover:scale-105 transition-transform duration-300">
+                        <Logo light asLink={false} />
                     </Link>
                 </div>
 
-                {/* Role Badge with animation */}
-                <motion.div
-                    layout
-                    className={`mx-4 mt-4 py-2 rounded-xl bg-gradient-to-r ${roleColor} text-white text-center overflow-hidden ${collapsed ? 'mx-2 px-2' : 'px-3'}`}
-                >
-                    <AnimatePresence mode="wait">
-                        {collapsed ? (
-                            <motion.div
-                                key="icon"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                            >
-                                <Shield size={18} className="mx-auto" />
-                            </motion.div>
-                        ) : (
-                            <motion.span
-                                key="text"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="text-sm font-medium whitespace-nowrap"
-                            >
+                {/* Role Badge - Stylish Card */}
+                <div className="px-5 mt-6 mb-2">
+                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-4 group">
+                        <div className={`absolute inset-0 bg-gradient-to-r ${roleColor} opacity-5 group-hover:opacity-10 transition-opacity duration-500`} />
+                        <div className="flex items-center gap-3 relative z-10">
+                            <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${roleColor} animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.6)]`} />
+                            <span className="text-xs font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">
                                 {roleTitle}
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+                <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
                     {menuItems.map((item) => (
                         <NavLink
                             key={item.id}
                             to={item.path}
                             end={item.path === `/${userRole}` || item.path === '/lawyer' || item.path === '/admin' || item.path === '/cms' || item.path === '/director'}
                             className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 relative ${isActive
+                                `relative flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden ${isActive
                                     ? 'text-white'
-                                    : 'text-depa-light hover:bg-depa-muted/10'
-                                } ${collapsed ? 'justify-center' : ''}`
+                                    : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
+                                }`
                             }
                         >
                             {({ isActive }) => (
                                 <>
-                                    {/* Animated background pill */}
                                     {isActive && (
                                         <motion.div
                                             layoutId="activeTab"
-                                            className="absolute inset-0 bg-depa-brand rounded-xl shadow-lg"
+                                            className="absolute inset-0 bg-gradient-to-r from-[#06B6D4]/10 to-transparent border-l-[3px] border-[#06B6D4]"
                                             initial={false}
-                                            transition={{
-                                                type: 'spring',
-                                                stiffness: 500,
-                                                damping: 35,
-                                                mass: 1
-                                            }}
+                                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                         />
                                     )}
-
-                                    {/* Icon and text */}
-                                    <span className="relative z-10 flex items-center gap-3">
-                                        <item.icon size={20} />
-                                        {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                                    <motion.div
+                                        whileHover={{ scale: 1.1, rotate: 5 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                    >
+                                        <item.icon
+                                            size={20}
+                                            className={`relative z-10 transition-colors duration-300 ${isActive ? 'text-[#06B6D4] drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]' : 'group-hover:text-white'
+                                                }`}
+                                        />
+                                    </motion.div>
+                                    <span className="relative z-10 text-[15px] font-medium tracking-wide">
+                                        {item.label}
                                     </span>
 
-                                    {/* Badge */}
+                                    {/* Unread Badge */}
                                     {item.badge && unreadChats > 0 && (
-                                        <span className={`relative z-10 ${collapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} min-w-[20px] h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1.5`}>
+                                        <span className="ml-auto relative z-10 px-2 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse">
                                             {unreadChats}
                                         </span>
                                     )}
@@ -194,81 +180,78 @@ const BackofficeLayout = () => {
                     ))}
                 </nav>
 
-                {/* User & Logout */}
-                <div className="p-4 border-t border-depa-muted/20">
-                    <div className={`flex items-center gap-3 mb-3 ${collapsed ? 'justify-center' : ''}`}>
-                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${roleColor} flex items-center justify-center text-white font-bold text-sm`}>
-                            {getUserInitials()}
-                        </div>
-                        {!collapsed && (
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-slate-900 truncate">
-                                    {user?.first_name} {user?.last_name}
-                                </p>
-                                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Collapse Toggle */}
-                    <motion.button
-                        onClick={() => setCollapsed(!collapsed)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`flex items-center gap-3 w-full px-3 py-2.5 text-depa-light hover:bg-depa-muted/10 rounded-xl transition-colors mb-2 ${collapsed ? 'justify-center' : ''}`}
-                    >
-                        <motion.div
-                            animate={{ rotate: collapsed ? 180 : 0 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <ChevronLeft size={20} />
-                        </motion.div>
-                        {!collapsed && <span className="text-sm font-medium">Свернуть</span>}
-                    </motion.button>
-
+                {/* Footer Actions */}
+                <div className="p-5 border-t border-white/5 space-y-4 bg-[#0F172A]/40 backdrop-blur-md">
                     <button
                         onClick={handleLogout}
-                        className={`flex items-center gap-3 w-full px-3 py-2.5 text-depa-light hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-colors ${collapsed ? 'justify-center' : ''}`}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all group"
                     >
-                        <LogOut size={20} />
-                        {!collapsed && <span className="text-sm font-medium">Выйти</span>}
+                        <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-sm font-medium">Выйти</span>
                     </button>
-                </div>
-            </motion.aside>
 
-            {/* Main Content */}
-            <main className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
-                {/* Top Header */}
-                <header className="sticky top-0 z-30 bg-depa-bg/80 backdrop-blur-md border-b border-slate-200/50 px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">
-                                {roleTitle}
-                            </h1>
-                            <p className="text-slate-500 text-sm">
-                                {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors cursor-pointer group">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${roleColor} flex items-center justify-center text-white font-bold text-sm shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                            {getUserInitials()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white truncate group-hover:text-[#06B6D4] transition-colors">
+                                {user?.first_name} {user?.last_name}
                             </p>
+                            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button className="relative p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-                                <Bell size={20} className="text-slate-500" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]" />
+                    </div>
+                </div>
+            </aside>
+
+            {/* MAIN CONTENT AREA */}
+            <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden bg-[#050B14] relative">
+                {/* Header - Glassmorphic & Sticky */}
+                <header className="h-24 flex items-center justify-between px-8 border-b border-white/5 relative z-20 bg-[#050B14]/80 backdrop-blur-md transition-all duration-300">
+                    <div>
+                        <motion.h1
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-2xl font-bold text-white tracking-tight"
+                        >
+                            {roleTitle}
+                        </motion.h1>
+                        <motion.p
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-slate-400 text-sm font-medium mt-1"
+                        >
+                            {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </motion.p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <motion.button
+                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                            whileTap={{ scale: 0.95 }}
+                            className="relative w-11 h-11 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-slate-300 transition-colors"
+                        >
+                            <Bell size={20} />
+                            <span className="absolute top-3 right-3.5 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse"></span>
+                        </motion.button>
                     </div>
                 </header>
 
-                {/* Page Content with Animation */}
-                <div className="p-6 pb-8">
-                    <motion.div
-                        key={location.pathname}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                    >
-                        <Outlet />
-                    </motion.div>
+                {/* Scrollable Page Content */}
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 relative z-10 custom-scrollbar-page">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={location.pathname}
+                            initial={{ opacity: 0, y: 15, scale: 0.99 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -15, scale: 0.99 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="h-full"
+                        >
+                            <Outlet />
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </main>
         </div>
