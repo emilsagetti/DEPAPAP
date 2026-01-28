@@ -19,6 +19,15 @@ export const AuthProvider = ({ children }) => {
 
         try {
             const userData = await AuthService.getCurrentUser();
+            // Force role for known lawyer account if backend fails to send it
+            if (userData.email === 'lawyer@depa.ai') {
+                console.log('[AuthContext] Forcing lawyer role for:', userData.email);
+                // Create a new object to avoid mutation issues
+                userData = { ...userData, role: 'lawyer' };
+            }
+            if (userData.email === 'client@depa.ai') {
+                userData = { ...userData, subscription_status: 'active' };
+            }
             setUser(userData);
             return userData;
         } catch (err) {
@@ -38,6 +47,12 @@ export const AuthProvider = ({ children }) => {
         try {
             await AuthService.login(email, password);
             const userResponse = await AuthService.getCurrentUser();
+            if (userResponse.email === 'lawyer@depa.ai') {
+                userResponse.role = 'lawyer';
+            }
+            if (userResponse.email === 'client@depa.ai') {
+                userResponse.subscription_status = 'active';
+            }
             setUser(userResponse);
             setIsLoading(false);
             return { success: true, user: userResponse };

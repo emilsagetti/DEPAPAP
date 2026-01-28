@@ -1,173 +1,254 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { MessageSquare, Users, FileText, Calendar, Clock, ArrowUpRight } from 'lucide-react';
-import AnimatedCounter from '../../components/AnimatedCounter';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    LayoutDashboard,
+    MessageSquare,
+    Clock,
+    AlertCircle,
+    CheckCircle2,
+    Filter,
+    Search,
+    MoreVertical,
+    Star,
+    ArrowRight,
+    FileText,
+    Shield,
+    Bot,
+    User
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const StatCard = ({ icon: Icon, label, value, numericValue, trend, color, delay = 0 }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, delay: delay * 0.1, ease: 'easeOut' }}
-        whileHover={{ y: -4, transition: { duration: 0.2 } }}
-        className="relative overflow-hidden rounded-[24px] p-6 bg-white/[0.03] border border-white/10 backdrop-blur-sm group"
-    >
-        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-        <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${color} opacity-10 blur-2xl group-hover:opacity-20 transition-opacity duration-500`} />
-
-        <div className="relative z-10 flex items-start justify-between">
-            <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: delay * 0.1 + 0.2, type: 'spring', stiffness: 200 }}
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg shadow-black/20`}
-            >
-                <Icon size={22} className="text-white" />
-            </motion.div>
-            {trend !== undefined && (
-                <motion.span
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: delay * 0.1 + 0.3 }}
-                    className={`flex items-center gap-1 text-sm font-bold bg-white/5 px-2 py-1 rounded-lg border border-white/5 ${trend > 0 ? 'text-green-400' : 'text-red-400'}`}
-                >
-                    <ArrowUpRight size={14} className={trend < 0 ? 'rotate-90' : ''} />
-                    {trend > 0 ? '+' : ''}{trend}%
-                </motion.span>
+const TaskCard = ({ task, onClick }) => {
+    return (
+        <motion.div
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={onClick}
+            className="bg-[#1E293B]/60 backdrop-blur-md border border-white/5 p-5 rounded-2xl hover:bg-white/10 hover:border-[#06B6D4]/30 cursor-pointer transition-all group relative overflow-hidden"
+        >
+            {/* Urgency Stripe */}
+            {task.urgency === 'high' && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
             )}
-        </div>
-        <div className="relative z-10 mt-6">
-            <p className="text-3xl font-bold text-white tracking-tight">
-                <AnimatedCounter value={numericValue} duration={1.2} />
+            {task.urgency === 'medium' && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500"></div>
+            )}
+
+            <div className="flex justify-between items-start mb-3 pl-3">
+                <div className="flex items-center gap-2">
+                    {task.type === 'chat' && <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400"><MessageSquare size={16} /></div>}
+                    {task.type === 'document' && <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400"><FileText size={16} /></div>}
+                    {task.type === 'audit' && <div className="p-1.5 rounded-lg bg-orange-500/20 text-orange-400"><Shield size={16} /></div>}
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{task.category}</span>
+                </div>
+                <span className="text-xs text-slate-500 font-mono">{task.time}</span>
+            </div>
+
+            <h3 className="text-white font-medium text-lg mb-2 pl-3 group-hover:text-[#06B6D4] transition-colors">
+                {task.title}
+            </h3>
+
+            <p className="text-slate-400 text-sm pl-3 mb-4 line-clamp-2">
+                {task.description}
             </p>
-            <p className="text-sm text-slate-400 font-medium mt-1">{label}</p>
+
+            <div className="pl-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-xs text-white/60 bg-white/5 px-2 py-1 rounded-lg">
+                        <User size={12} />
+                        {task.client}
+                    </div>
+                    {task.aiReady && (
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-[#06B6D4] bg-[#06B6D4]/10 px-2 py-1 rounded-lg border border-[#06B6D4]/20 animate-pulse">
+                            <Bot size={12} />
+                            AI PREP
+                        </div>
+                    )}
+                </div>
+                <button className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
+                    <ArrowRight size={18} />
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
+const StatWidget = ({ icon: Icon, label, value, trend, color }) => (
+    <div className="bg-[#1E293B]/40 border border-white/5 p-4 rounded-2xl flex items-center gap-4">
+        <div className={`p-3 rounded-xl bg-${color}-500/10 text-${color}-500`}>
+            <Icon size={24} />
         </div>
-    </motion.div>
+        <div>
+            <div className="text-2xl font-bold text-white">{value}</div>
+            <div className="text-xs text-slate-400 flex items-center gap-1">
+                {label}
+                <span className="text-green-400 bg-green-500/10 px-1 rounded">+{trend}%</span>
+            </div>
+        </div>
+    </div>
 );
 
 const LawyerDashboard = () => {
-    const stats = [
-        { icon: MessageSquare, label: 'Активные чаты', value: '12', numericValue: 12, trend: 15, color: 'from-blue-500 to-cyan-500' },
-        { icon: Users, label: 'Мои клиенты', value: '47', numericValue: 47, trend: 8, color: 'from-green-500 to-emerald-500' },
-        { icon: FileText, label: 'Документы', value: '156', numericValue: 156, trend: 23, color: 'from-purple-500 to-pink-500' },
-        { icon: Calendar, label: 'Консультации сегодня', value: '5', numericValue: 5, color: 'from-amber-500 to-orange-500' },
-    ];
+    const navigate = useNavigate();
+    const [filter, setFilter] = useState('all'); // all, urgent, chat, document
 
-    const recentChats = [
-        { id: 1, client: 'Иван Петров', message: 'Добрый день, подскажите по договору...', time: '5 мин', unread: true },
-        { id: 2, client: 'ООО "Ромашка"', message: 'Документы готовы, жду вашего ответа', time: '15 мин', unread: true },
-        { id: 3, client: 'Мария Сидорова', message: 'Спасибо за консультацию!', time: '1 час', unread: false },
-    ];
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
+    const mockTasks = [
+        {
+            id: 1,
+            type: 'chat',
+            category: 'Консультация',
+            title: 'Вопрос по налоговым рискам',
+            description: 'Клиент спрашивает про дробление бизнеса в связи с новыми поправками. Требуется развернутый ответ.',
+            client: 'ООО "Вектор"',
+            urgency: 'high',
+            time: '15 мин назад',
+            aiReady: true
+        },
+        {
+            id: 2,
+            type: 'document',
+            category: 'Аудит договора',
+            title: 'Проверка договора поставки №45',
+            description: 'Необходимо проверить раздел ответственности и штрафных санкций. AI нашел 3 критических риска.',
+            client: 'ИП Смирнов',
+            urgency: 'medium',
+            time: '1 час назад',
+            aiReady: true
+        },
+        {
+            id: 3,
+            type: 'audit',
+            category: 'Комплайенс',
+            title: 'Заявка на полную проверку юрлица',
+            description: 'Новый клиент запросил экспресс-аудит перед сделкой M&A.',
+            client: 'ТехноГрупп',
+            urgency: 'low',
+            time: '3 часа назад',
+            aiReady: false
+        },
+        {
+            id: 4,
+            type: 'chat',
+            category: 'Трудовое право',
+            title: 'Увольнение сотрудника',
+            description: 'Спорная ситуация с выплатой компенсации.',
+            client: 'Стартап Лаб',
+            urgency: 'medium',
+            time: 'Вчера',
+            aiReady: true
         }
-    };
+    ];
+
+    const filteredTasks = filter === 'all'
+        ? mockTasks
+        : filter === 'urgent'
+            ? mockTasks.filter(t => t.urgency === 'high')
+            : mockTasks.filter(t => t.type === filter);
 
     return (
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-6"
-        >
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
-                    <StatCard key={i} {...stat} delay={i} />
-                ))}
+        <div className="max-w-7xl mx-auto space-y-8">
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <StatWidget icon={LayoutDashboard} label="Всего задач" value="12" trend="15" color="blue" />
+                <StatWidget icon={AlertCircle} label="Высокий приоритет" value="3" trend="5" color="red" />
+                <StatWidget icon={CheckCircle2} label="Завершено" value="45" trend="8" color="green" />
+                <StatWidget icon={Clock} label="Среднее время" value="1.2ч" trend="12" color="purple" />
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                {/* Recent Chats Widget */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="lg:col-span-2 bg-[#0F172A]/40 rounded-[24px] border border-white/10 backdrop-blur-xl overflow-hidden"
-                >
-                    <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
-                        <h2 className="font-bold text-lg text-white tracking-tight">Последние сообщения</h2>
-                        <Link to="/lawyer/chats" className="text-sm text-[#06B6D4] hover:text-[#06B6D4]/80 font-medium transition-colors">
-                            Все чаты →
-                        </Link>
+            <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-280px)]">
+                {/* Smart Inbox Column */}
+                <div className="flex-1 flex flex-col bg-[#0F172A] border border-white/5 rounded-3xl p-6 relative overflow-hidden">
+                    {/* Background Grid */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(6,182,212,0.05)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+
+                    <div className="flex items-center justify-between mb-6 relative z-10">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                Smart Inbox
+                                <span className="bg-[#06B6D4]/20 text-[#06B6D4] text-xs px-2 py-0.5 rounded border border-[#06B6D4]/30">AI Powered</span>
+                            </h2>
+                            <p className="text-slate-400 text-sm">Умная очередь входящих задач</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 rounded-xl text-sm transition-colors border ${filter === 'all' ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-slate-500 hover:text-white'}`}>
+                                Все
+                            </button>
+                            <button onClick={() => setFilter('urgent')} className={`px-3 py-1.5 rounded-xl text-sm transition-colors border ${filter === 'urgent' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'border-transparent text-slate-500 hover:text-white'}`}>
+                                Срочные
+                            </button>
+                            <button onClick={() => setFilter('document')} className={`px-3 py-1.5 rounded-xl text-sm transition-colors border ${filter === 'document' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'border-transparent text-slate-500 hover:text-white'}`}>
+                                Документы
+                            </button>
+                        </div>
                     </div>
-                    <div className="divide-y divide-white/5">
-                        {recentChats.map((chat, i) => (
-                            <motion.div
-                                key={chat.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.5 + i * 0.1 }}
-                            >
-                                <Link
-                                    to={`/lawyer/chat/${chat.id}`}
-                                    className="block px-6 py-4 hover:bg-white/[0.02] transition-colors group relative"
-                                >
-                                    {chat.unread && (
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#06B6D4] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    )}
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                                                {chat.client[0]}
-                                            </div>
-                                            {chat.unread && (
-                                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#06B6D4] border-2 border-[#0F172A] rounded-full" />
-                                            )}
-                                        </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <p className={`font-semibold truncate ${chat.unread ? 'text-white' : 'text-slate-300'}`}>
-                                                    {chat.client}
-                                                </p>
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                                                    <Clock size={12} />
-                                                    {chat.time}
-                                                </div>
-                                            </div>
-                                            <p className={`text-sm truncate ${chat.unread ? 'text-slate-300' : 'text-slate-500'}`}>
-                                                {chat.message}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
+                    <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 space-y-3 relative z-10">
+                        {filteredTasks.length === 0 ? (
+                            <div className="text-center py-20 text-slate-500">
+                                Задач нет
+                            </div>
+                        ) : (
+                            filteredTasks.map(task => (
+                                <TaskCard key={task.id} task={task} onClick={() => {
+                                    if (task.type === 'chat') navigate(`/lawyer/chat/${task.id}`);
+                                    else navigate('/lawyer/documents');
+                                }} />
+                            ))
+                        )}
                     </div>
-                </motion.div>
+                </div>
 
-                {/* Quick Actions / Mini Calendar Placeholder */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="bg-gradient-to-br from-[#06B6D4] to-blue-600 rounded-[24px] p-6 text-white relative overflow-hidden"
-                >
-                    <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                {/* Right Panel: AI Context & Tools */}
+                <div className="w-full lg:w-96 flex flex-col gap-6">
+                    {/* Assistant Widget */}
+                    <div className="bg-gradient-to-br from-[#06B6D4]/20 to-blue-600/10 border border-[#06B6D4]/30 rounded-3xl p-6 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-30 transition-opacity"><Bot size={80} /></div>
 
-                    <h3 className="text-xl font-bold mb-2 relative z-10">Новая задача</h3>
-                    <p className="text-blue-100 text-sm mb-6 relative z-10">Запланируйте консультацию или создайте новый документ</p>
+                        <h3 className="text-xl font-bold text-white mb-2 relative z-10">AI Ассистент</h3>
+                        <p className="text-sm text-slate-300 mb-6 relative z-10">
+                            Готов помочь с подготовкой ответов на 3 новых сообщения. Есть черновики.
+                        </p>
 
-                    <div className="space-y-3 relative z-10">
-                        <button className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-white/20">
-                            <Calendar size={16} />
-                            Создать событие
-                        </button>
-                        <button className="w-full py-3 px-4 bg-white text-blue-600 hover:bg-blue-50 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-lg">
-                            <Link to="/lawyer/chats" className="flex items-center gap-2">
-                                <MessageSquare size={16} />
-                                Написать клиенту
-                            </Link>
+                        <button
+                            onClick={() => navigate('/lawyer/assistant')}
+                            className="w-full py-3 bg-[#06B6D4] hover:bg-[#0891b2] text-white rounded-xl font-medium shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all relative z-10 flex items-center justify-center gap-2"
+                        >
+                            <Bot size={18} />
+                            Открыть Ассистента
                         </button>
                     </div>
-                </motion.div>
+
+                    {/* Quick Document Widget */}
+                    <div className="flex-1 bg-[#1E293B]/60 backdrop-blur-md border border-white/5 rounded-3xl p-6 flex flex-col">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <FileText size={18} className="text-purple-400" />
+                            Быстрый конструктор
+                        </h3>
+                        <div className="flex-1 space-y-2">
+                            <button onClick={() => navigate('/lawyer/constructor')} className="w-full text-left p-3 hover:bg-white/5 rounded-xl transition-colors text-slate-300 hover:text-white text-sm flex items-center justify-between group">
+                                <span>Договор поставки</span>
+                                <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                            <button onClick={() => navigate('/lawyer/constructor')} className="w-full text-left p-3 hover:bg-white/5 rounded-xl transition-colors text-slate-300 hover:text-white text-sm flex items-center justify-between group">
+                                <span>Претензия (Шаблон)</span>
+                                <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                            <button onClick={() => navigate('/lawyer/constructor')} className="w-full text-left p-3 hover:bg-white/5 rounded-xl transition-colors text-slate-300 hover:text-white text-sm flex items-center justify-between group">
+                                <span>Доверенность</span>
+                                <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => navigate('/lawyer/constructor')}
+                            className="mt-4 w-full py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm transition-colors"
+                        >
+                            Все шаблоны
+                        </button>
+                    </div>
+                </div>
             </div>
-        </motion.div>
+        </div>
     );
 };
 

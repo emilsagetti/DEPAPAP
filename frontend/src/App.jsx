@@ -59,6 +59,7 @@ import DirectorFinance from './pages/backoffice/DirectorFinance';
 import DirectorTeam from './pages/backoffice/DirectorTeam';
 import LawyerDocuments from './pages/backoffice/LawyerDocuments';
 import LawyerPlanner from './pages/backoffice/LawyerPlanner';
+import LawyerSupport from './pages/backoffice/LawyerSupport';
 import BackofficeSettings from './pages/backoffice/BackofficeSettings';
 import AdminReports from './pages/backoffice/AdminReports';
 import AdminLogs from './pages/backoffice/AdminLogs';
@@ -79,6 +80,12 @@ import CabinetBilling from './pages/cabinet/CabinetBilling';
 import CabinetProfile from './pages/cabinet/CabinetProfile';
 import CabinetSecurity from './pages/cabinet/CabinetSecurity';
 import CabinetSupport from './pages/cabinet/CabinetSupport';
+
+import CabinetAssistant from './pages/cabinet/CabinetAssistant';
+import CabinetConstructor from './pages/cabinet/CabinetConstructor';
+import CabinetVault from './pages/cabinet/CabinetVault';
+import CabinetResearch from './pages/cabinet/CabinetResearch';
+import CabinetWorkflows from './pages/cabinet/CabinetWorkflows';
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -134,6 +141,8 @@ function App() {
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contacts" element={<Contacts />} />
 
+
+
               {/* New Personal Cabinet */}
               <Route path="/cabinet" element={
                 <ProtectedRoute>
@@ -141,6 +150,14 @@ function App() {
                 </ProtectedRoute>
               }>
                 <Route index element={<CabinetDashboard />} />
+                <Route path="assistant" element={<CabinetAssistant />} />
+
+                {/* Future Modules Placeholders */}
+                <Route path="constructor" element={<CabinetConstructor />} />
+                <Route path="vault" element={<CabinetVault />} />
+                <Route path="research" element={<CabinetResearch />} />
+                <Route path="workflows" element={<CabinetWorkflows />} />
+
                 <Route path="services" element={<CabinetServices />} />
                 <Route path="docs" element={<CabinetDocs />} />
                 <Route path="chats" element={<CabinetChats />} />
@@ -178,11 +195,15 @@ function App() {
                 element={<BackofficeLayout />}
               >
                 <Route index element={<LawyerDashboard />} />
+                <Route path="assistant" element={<CabinetAssistant />} />
+                <Route path="constructor" element={<CabinetConstructor />} />
+                <Route path="research" element={<CabinetResearch />} />
                 <Route path="chats" element={<LawyerChatList />} />
                 <Route path="chat/:id" element={<LawyerChatPage />} />
                 <Route path="clients" element={<LawyerClients />} />
-                <Route path="documents" element={<LawyerDocuments />} />
+                <Route path="documents" element={<CabinetVault />} />
                 <Route path="planner" element={<LawyerPlanner />} />
+                <Route path="support" element={<LawyerSupport />} />
                 <Route path="settings" element={<BackofficeSettings />} />
               </Route>
 

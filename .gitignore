@@ -6,6 +6,10 @@ env/
 __pycache__/
 *.pyc
 
+# Security
+deploy_key
+deploy_key.pub
+
 # Environment variables
 .env
 .env.local

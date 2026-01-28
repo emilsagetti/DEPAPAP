@@ -1,32 +1,55 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
-import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, MessageSquare, Folder, CreditCard, Settings, LogOut, Bell, Search, X, FileText, User, Menu, Shield, Briefcase, LifeBuoy, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    LayoutDashboard,
+    MessageSquare,
+    CreditCard,
+    LogOut,
+    User,
+    Menu,
+    Shield,
+    Briefcase,
+    LifeBuoy,
+    Lock,
+    X,
+    Bot,          // AI Assistant
+    FileEdit,     // Constructor
+    BookOpen,     // Research
+    Database,     // Vault
+    GitBranch,    // Workflows
+    Cpu           // Alternative for tools
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 
 const CabinetLayout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [searchOpen, setSearchOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
-    const notificationsRef = useRef(null);
     const profileRef = useRef(null);
 
     // Mock subscription status check
     const isSubscribed = user?.subscription_status === 'active';
 
+    // New Menu Structure
     const menuItems = [
-        { id: 'dashboard', label: 'Рабочий стол', icon: LayoutDashboard, path: '/cabinet', locked: !isSubscribed },
-        { id: 'services', label: 'Услуги и заявки', icon: Briefcase, path: '/cabinet/services', locked: !isSubscribed },
-        { id: 'docs', label: 'Документы', icon: Folder, path: '/cabinet/docs', locked: !isSubscribed },
-        { id: 'chats', label: 'Обращения', icon: MessageSquare, path: '/cabinet/chats', locked: !isSubscribed },
-        { id: 'support', label: 'Поддержка', icon: LifeBuoy, path: '/cabinet/support', locked: false }, // Support available
-        { id: 'tariff', label: 'Тариф и подписка', icon: CreditCard, path: '/cabinet/tariff', locked: false },
-        { id: 'billing', label: 'Финансы', icon: FileText, path: '/cabinet/billing', locked: !isSubscribed },
-        { id: 'profile', label: 'Профиль', icon: User, path: '/cabinet/profile', locked: false },
-        { id: 'security', label: 'Безопасность', icon: Shield, path: '/cabinet/security', locked: false },
+        // Main
+        { id: 'dashboard', label: 'Рабочий стол', icon: LayoutDashboard, path: '/cabinet', locked: false },
+        { id: 'assistant', label: 'AI Ассистент', icon: Bot, path: '/cabinet/assistant', locked: !isSubscribed, badge: 'AI' },
+
+        // Tools
+        { id: 'constructor', label: 'Конструктор', icon: FileEdit, path: '/cabinet/constructor', locked: !isSubscribed },
+        { id: 'vault', label: 'Хранилище', icon: Database, path: '/cabinet/vault', locked: !isSubscribed }, // Was 'docs'
+        { id: 'research', label: 'База знаний', icon: BookOpen, path: '/cabinet/research', locked: !isSubscribed },
+        { id: 'workflows', label: 'Процессы', icon: GitBranch, path: '/cabinet/workflows', locked: !isSubscribed, badge: 'Beta' },
+
+        // Service
+        { id: 'services', label: 'Услуги и заявки', icon: Briefcase, path: '/cabinet/services', locked: false },
+        { id: 'billing', label: 'Финансы', icon: CreditCard, path: '/cabinet/billing', locked: !isSubscribed },
+        { id: 'tariff', label: 'Тариф и подписка', icon: Shield, path: '/cabinet/tariff', locked: false },
+        { id: 'support', label: 'Поддержка', icon: LifeBuoy, path: '/cabinet/support', locked: false },
     ];
 
     const getUserDisplayName = () => user?.first_name || user?.email?.split('@')[0] || 'Пользователь';
@@ -45,17 +68,20 @@ const CabinetLayout = () => {
         if (!user) return; // Wait for user to load
 
         const currentPath = window.location.pathname;
-        const whitelist = ['/cabinet/tariff', '/cabinet/profile', '/cabinet/security', '/cabinet/support'];
+        const whitelist = ['/cabinet', '/cabinet/tariff', '/cabinet/support', '/cabinet/services', '/cabinet/profile', '/cabinet/security'];
 
-        // Check if user has no subscription and is not on a whitelisted page
-        if (!isSubscribed && !whitelist.some(path => currentPath.startsWith(path))) {
-            console.log('[CABINET] No subscription detected, redirecting to tariff page');
+        // Only redirect if explicitly accessing a locked tool AND no subscription
+        // We iterate menuItems to check if current path is locked
+        const currentItem = menuItems.find(item => item.path === currentPath);
+
+        if (currentItem && currentItem.locked && !isSubscribed) {
+            console.log('[CABINET] Access denied to locked feature, redirecting to tariff');
             navigate('/cabinet/tariff', { replace: true });
         }
     }, [isSubscribed, user, navigate]);
 
     return (
-        <div className="min-h-screen relative font-sans text-white animate-fade-in">
+        <div className="min-h-screen relative font-sans text-white animate-fade-in bg-[#050B14]">
             {/* Mesh Background */}
             <div className="fixed inset-0 pointer-events-none z-[-1]">
                 <div className="absolute inset-0 bg-[#050B14]"></div>
@@ -63,6 +89,7 @@ const CabinetLayout = () => {
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-depa-cta/10 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
             </div>
+
             {/* Desktop Sidebar */}
             <aside className="fixed left-0 top-0 h-screen w-72 z-40 hidden lg:flex flex-col bg-[#050B14]/80 backdrop-blur-2xl border-r border-white/5 shadow-[0_0_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-out hover:w-[19rem] group/sidebar">
                 <div className="p-8 border-b border-white/5 flex items-center gap-3 relative overflow-hidden group/header">
@@ -74,7 +101,6 @@ const CabinetLayout = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
-                    <div className="px-4 mb-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] group-hover/sidebar:text-white/50 transition-colors">Меню</div>
                     {menuItems.map((item, index) => (
                         <NavLink
                             key={item.id}
@@ -86,13 +112,12 @@ const CabinetLayout = () => {
                                 }
                             }}
                             end={item.path === '/cabinet'}
-                            style={{ animationDelay: `${index * 50}ms` }}
                             className={({ isActive }) => `
-                                relative group flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 w-full mb-1.5 animate-slide-up opacity-0 overflow-hidden
+                                relative group flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 w-full mb-1.5 animate-slide-up overflow-hidden
                                 ${isActive && !item.locked
                                     ? 'bg-gradient-to-r from-[#06B6D4]/15 to-transparent shadow-[inset_3px_0_0_0_#06B6D4]'
                                     : 'hover:bg-white/5'}
-                                ${item.locked ? 'opacity-40 cursor-not-allowed contrast-75 saturate-50' : ''}
+                                ${item.locked ? 'opacity-50 cursor-not-allowed grayscale' : ''}
                             `}
                         >
                             {({ isActive }) => (
@@ -106,6 +131,14 @@ const CabinetLayout = () => {
                                     <span className={`font-medium tracking-wide text-sm relative z-10 transition-colors ${isActive ? 'text-white' : 'text-white/60 group-hover:text-white'}`}>
                                         {item.label}
                                     </span>
+
+                                    {/* Badge */}
+                                    {item.badge && !item.locked && (
+                                        <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#06B6D4] text-white shadow-[0_0_8px_rgba(6,182,212,0.4)]">
+                                            {item.badge}
+                                        </span>
+                                    )}
+
                                     {item.locked && (
                                         <Lock size={14} className="ml-auto text-white/20" />
                                     )}
@@ -144,7 +177,6 @@ const CabinetLayout = () => {
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             className="fixed top-0 left-0 bottom-0 w-80 bg-[#050B14] z-50 lg:hidden flex flex-col shadow-2xl border-r border-white/10"
                         >
-                            {/* Mobile menu content matching desktop */}
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                 <Link to="/" onClick={() => setSidebarOpen(false)}>
                                     <Logo asLink={false} />
@@ -158,34 +190,25 @@ const CabinetLayout = () => {
                             </div>
 
                             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-                                <div className="px-4 mb-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Меню</div>
                                 {menuItems.map((item, index) => (
                                     <NavLink
                                         key={item.id}
                                         to={item.path}
                                         end={item.path === '/cabinet'}
                                         onClick={() => setSidebarOpen(false)}
-                                        style={{ animationDelay: `${index * 50}ms` }}
                                         className={({ isActive }) => `
-                                            relative group flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 w-full mb-1.5 animate-slide-up opacity-0 overflow-hidden
+                                            relative group flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 w-full mb-1.5 animate-slide-up overflow-hidden
                                             ${isActive
                                                 ? 'bg-gradient-to-r from-[#06B6D4]/15 to-transparent shadow-[inset_3px_0_0_0_#06B6D4]'
                                                 : 'hover:bg-white/5'}
                                         `}
                                     >
-                                        {({ isActive }) => (
-                                            <>
-                                                {isActive && (
-                                                    <div className="absolute inset-0 bg-[#06B6D4]/5 rounded-2xl animate-pulse-slow"></div>
-                                                )}
-                                                <div className={`mr-4 shrink-0 transition-all duration-300 relative z-10 p-1.5 rounded-xl ${isActive ? 'bg-[#06B6D4]/20 text-[#06B6D4] shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-white/50 group-hover:text-white group-hover:bg-white/10'}`}>
-                                                    <item.icon size={20} className={isActive ? 'scale-105' : 'group-hover:scale-110 transition-transform'} />
-                                                </div>
-                                                <span className={`font-medium tracking-wide text-sm relative z-10 transition-colors ${isActive ? 'text-white' : 'text-white/60 group-hover:text-white'}`}>
-                                                    {item.label}
-                                                </span>
-                                            </>
-                                        )}
+                                        <div className={`mr-4 shrink-0 transition-all duration-300 relative z-10 p-1.5 rounded-xl text-white/50 group-hover:text-white group-hover:bg-white/10`}>
+                                            <item.icon size={20} />
+                                        </div>
+                                        <span className="font-medium tracking-wide text-sm relative z-10 text-white/60 group-hover:text-white">
+                                            {item.label}
+                                        </span>
                                     </NavLink>
                                 ))}
                             </nav>
@@ -219,7 +242,6 @@ const CabinetLayout = () => {
                                 <div onClick={() => setProfileOpen(!profileOpen)} className="w-10 h-10 rounded-full bg-gradient-to-br from-[#06B6D4] to-blue-600 text-white flex items-center justify-center cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.3)] border border-white/10 hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-premium hover:scale-105 active:scale-95">
                                     {getUserInitials()}
                                 </div>
-                                {/* Simple Dropdown for Profile */}
                                 <AnimatePresence>
                                     {profileOpen && (
                                         <motion.div

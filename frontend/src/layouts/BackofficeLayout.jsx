@@ -18,7 +18,12 @@ import {
     UserCog,
     FolderOpen,
     Calendar,
-    Shield
+    Shield,
+    Bot,
+    PenTool,
+    Search,
+    Database,
+    LifeBuoy
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
@@ -27,10 +32,14 @@ import Logo from '../components/Logo';
 const roleMenus = {
     lawyer: [
         { id: 'dashboard', label: 'Рабочий стол', icon: LayoutDashboard, path: '/lawyer' },
+        { id: 'assistant', label: 'AI Ассистент', icon: Bot, path: '/lawyer/assistant' },
+        { id: 'constructor', label: 'Конструктор Pro', icon: PenTool, path: '/lawyer/constructor' },
+        { id: 'research', label: 'База знаний', icon: Search, path: '/lawyer/research' },
         { id: 'chats', label: 'Чаты', icon: MessageSquare, path: '/lawyer/chats', badge: true },
         { id: 'clients', label: 'Мои клиенты', icon: Users, path: '/lawyer/clients' },
-        { id: 'documents', label: 'Документы', icon: FolderOpen, path: '/lawyer/documents' },
+        { id: 'documents', label: 'Хранилище', icon: Database, path: '/lawyer/documents' },
         { id: 'planner', label: 'Планировщик', icon: Calendar, path: '/lawyer/planner' },
+        { id: 'support', label: 'Поддержка', icon: LifeBuoy, path: '/lawyer/support' },
         { id: 'settings', label: 'Настройки', icon: Settings, path: '/lawyer/settings' },
     ],
     admin: [
