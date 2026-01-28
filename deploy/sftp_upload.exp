@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+set host "31.31.196.161"
+set user "u3390483"
+set password "Butaeva1984"
+set local_docs_path "./docs"
+set remote_docs_path "/var/www/u3390483/data/www/depalaw.ru/docs/"
+
+spawn sftp -o StrictHostKeyChecking=no ${user}@${host}
+
+expect "password:"
+send "${password}\r"
+
+expect "sftp>"
+send "mkdir ${remote_docs_path}\r"
+
+expect "sftp>"
+send "put -r ${local_docs_path}/* ${remote_docs_path}\r"
+
+expect "sftp>"
+send "bye\r"

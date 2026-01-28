@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+
+set timeout 20
+set host "31.31.196.161"
+set user "u3390483"
+set password "Butaeva1984"
+set remote_webroot "/var/www/u3390483/data/www/depalaw.ru"
+set backup_dir "${remote_webroot}/_backup"
+set timestamp [timestamp -format "%Y-%m-%d_%H-%M"]
+
+spawn ssh -o StrictHostKeyChecking=no ${user}@${host} "mkdir -p ${backup_dir}/${timestamp} && cp -r ${remote_webroot}/docs ${backup_dir}/${timestamp}/ 2>/dev/null || echo 'No docs to backup'"
+
+expect {
+    "password:" {
+        send "${password}\r"
+        exp_continue
+    }
+    eof
+}

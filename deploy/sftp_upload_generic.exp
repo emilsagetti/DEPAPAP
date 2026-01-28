@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+set host "31.31.196.161"
+set user "u3390483"
+set password "Butaeva1984"
+
+# Arguments
+set local_path [lindex $argv 0]
+set remote_path [lindex $argv 1]
+
+if { $local_path == "" || $remote_path == "" } {
+    puts "Usage: ./sftp_upload_generic.exp <local_path> <remote_path>"
+    exit 1
+}
+
+spawn sftp -o StrictHostKeyChecking=no ${user}@${host}
+
+expect "password:"
+send "${password}\r"
+
+expect "sftp>"
+send "mkdir ${remote_path}\r"
+# Ignore mkdir error if exists
+
+expect "sftp>"
+send "put -r ${local_path}/* ${remote_path}\r"
+
+expect "sftp>"
+send "bye\r"

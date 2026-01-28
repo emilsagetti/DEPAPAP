@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  ydb:
+    image: yandex/ydb-local:latest
+    container_name: baa_legal_ydb
+    hostname: localhost
+    ports:
+      - "2135:2135" # GRPC
+      - "8765:8765" # UI
+      - "2136:2136" # GRPC (TLS)
+    environment:
+      YDB_LOCAL_SURVIVE_RESTART: true
+      YDB_USE_IN_MEMORY_PDISKS: true
+    volumes:
+      - ydb_data:/ydb_data
+
+volumes:
+  ydb_data:
