@@ -1,3 +1,9 @@
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'baa_legal_backend.settings')
+django.setup()
+
 from apps.core.models import User, Profile
 
 def create_lawyer():

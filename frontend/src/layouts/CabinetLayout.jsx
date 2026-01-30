@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import OnboardingTour from '../components/onboarding/OnboardingTour';
 
 const CabinetLayout = () => {
     const { user, logout } = useAuth();
@@ -104,6 +105,7 @@ const CabinetLayout = () => {
                     {menuItems.map((item, index) => (
                         <NavLink
                             key={item.id}
+                            id={`tour-nav-${item.id}`} // ID for Onboarding Tour
                             to={item.locked ? '#' : item.path}
                             onClick={(e) => {
                                 if (item.locked) {
@@ -193,6 +195,7 @@ const CabinetLayout = () => {
                                 {menuItems.map((item, index) => (
                                     <NavLink
                                         key={item.id}
+                                        id={`tour-nav-mobile-${item.id}`}
                                         to={item.path}
                                         end={item.path === '/cabinet'}
                                         onClick={() => setSidebarOpen(false)}
@@ -257,6 +260,15 @@ const CabinetLayout = () => {
                                             <Link to="/cabinet/security" onClick={() => setProfileOpen(false)} className="w-full text-left px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
                                                 <Shield size={16} /> Безопасность
                                             </Link>
+                                            <button
+                                                onClick={() => {
+                                                    setProfileOpen(false);
+                                                    window.dispatchEvent(new CustomEvent('start-onboarding-tour'));
+                                                }}
+                                                className="w-full text-left px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2"
+                                            >
+                                                <BookOpen size={16} /> Пройти обучение
+                                            </button>
                                             <button onClick={handleLogout} className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-white/5">
                                                 <LogOut size={16} /> Выйти из аккаунта
                                             </button>
@@ -272,6 +284,49 @@ const CabinetLayout = () => {
                     <Outlet />
                 </div>
             </main>
+
+            {/* Onboarding Tour */}
+            <OnboardingTour
+                run={isSubscribed}
+                steps={[
+                    {
+                        target: '#tour-nav-dashboard',
+                        title: 'Ваш Рабочий Стол',
+                        description: 'Здесь вы найдете обзор всех активных дел, последние уведомления и статистику вашего бизнеса. Главный центр управления.',
+                        icon: LayoutDashboard
+                    },
+                    {
+                        target: '#tour-nav-assistant',
+                        title: 'AI Ассистент',
+                        description: 'Умный юридический помощник, доступный 24/7. Задавайте любые вопросы, просите составить документы или проверить контрагента.',
+                        icon: Bot
+                    },
+                    {
+                        target: '#tour-nav-constructor',
+                        title: 'Конструктор Документов',
+                        description: 'Создавайте сложные юридические документы за пару кликов. Используйте готовые шаблоны или создавайте свои.',
+                        icon: FileEdit
+                    },
+                    {
+                        target: '#tour-nav-vault',
+                        title: 'Безопасное Хранилище',
+                        description: 'Храните все важные документы в зашифрованном виде. Доступ к ним имеете только вы.',
+                        icon: Database
+                    },
+                    {
+                        target: '#tour-nav-services',
+                        title: 'Услуги и Заявки',
+                        description: 'Заказывайте профессиональные юридические услуги, аудит или представительство в суде напрямую через платформу.',
+                        icon: Briefcase
+                    },
+                    {
+                        target: '#tour-nav-tariff',
+                        title: 'Управление Тарифом',
+                        description: 'Следите за статусом подписки и изменяйте тарифный план в зависимости от потребностей вашего бизнеса.',
+                        icon: Shield
+                    }
+                ]}
+            />
         </div >
     );
 };

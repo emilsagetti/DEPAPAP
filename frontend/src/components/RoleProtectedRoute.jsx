@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PremiumLoader from './common/PremiumLoader';
 
 /**
  * Protected route component that checks for specific roles
@@ -14,12 +15,9 @@ const RoleProtectedRoute = ({ children, allowedRoles = [], redirectTo = '/auth' 
     const location = useLocation();
 
     // Show nothing while loading
+    // Show nothing while loading
     if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-100">
-                <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-            </div>
-        );
+        return <PremiumLoader fullScreen={true} text="Проверка прав доступа..." />;
     }
 
     // Not authenticated - redirect to login
