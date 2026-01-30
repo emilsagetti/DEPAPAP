@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Folder, Upload, FileText, Download, Search, File, FileSpreadsheet, MoreVertical, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,6 +11,7 @@ import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const CabinetDocs = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [activeCategory, setActiveCategory] = useState('Все документы');
     const [searchQuery, setSearchQuery] = useState('');
     const [isDragging, setIsDragging] = useState(false);
@@ -264,6 +266,19 @@ const CabinetDocs = () => {
                                                         {formatSize(doc.file_size || doc.size)}
                                                     </div>
                                                     <div className="col-span-6 md:col-span-2 flex justify-end items-center gap-2 opacity-0 group-hover/row:opacity-100 transition-all transform translate-x-2 group-hover/row:translate-x-0">
+                                                        {/* Edit Button for DOCX */}
+                                                        {['doc', 'docx'].includes((doc.file || doc.name).split('.').pop().toLowerCase()) && (
+                                                            <button
+                                                                className="p-2.5 text-white/60 hover:text-[#06B6D4] hover:bg-[#06B6D4]/10 rounded-xl transition-all hover:scale-110 active:scale-95"
+                                                                title="Редактировать"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate('/cabinet/constructor', { state: { fileUrl: doc.file, title: doc.title || doc.name } });
+                                                                }}
+                                                            >
+                                                                <PenTool size={18} />
+                                                            </button>
+                                                        )}
                                                         <a
                                                             href={doc.file}
                                                             target="_blank"

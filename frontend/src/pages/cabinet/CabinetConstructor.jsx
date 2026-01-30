@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
+import mammoth from 'mammoth';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -12,10 +14,14 @@ import {
     Grid, Eraser, CaseSensitive, ChevronDown, Baseline, Link, Image as ImageIcon,
     ArrowRight, User as UserIcon, LayoutTemplate, Smartphone, RectangleHorizontal,
     RectangleVertical, Columns as ColumnsIcon, Scissors as ScissorsIcon, MoveVertical,
-    ArrowLeftToLine, ArrowRightToLine, File as FileIcon, Settings2
+    ArrowLeftToLine, ArrowRightToLine, File as FileIcon, Settings2,
+    Table,  // Added Table
+    ImagePlus, // Added ImagePlus
+    Link2, // Added Link2
 } from 'lucide-react';
 import { asBlob } from 'html-docx-js-typescript';
 import { saveAs } from 'file-saver';
+import SortDialog from './components/SortDialog';
 
 // --- Subcomponents ---
 
@@ -31,20 +37,32 @@ const ToolbarGroup = ({ label, children }) => (
     </div>
 );
 
-const ToolBtn = ({ icon: Icon, onClick, title, activeTitle, className = "" }) => (
+const ToolBtn = ({ icon: Icon, onClick, title, activeTitle, isActive = false, className = "" }) => (
     <button
         onClick={onClick}
         title={title || activeTitle}
-        className={`w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 active:bg-white/10 transition-colors ${className}`}
+        className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 group
+            ${isActive
+                ? 'bg-[#06B6D4]/10 text-[#06B6D4] ring-1 ring-[#06B6D4]/50 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5 hover:ring-1 hover:ring-white/10 active:scale-95'} 
+            ${className}`}
     >
-        <Icon size={18} strokeWidth={2} />
+        <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className="transition-all duration-300" />
+        {/* Subtle glow dot for active state */}
+        {isActive && (
+            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#06B6D4] shadow-[0_0_5px_#06B6D4]"></span>
+        )}
     </button>
 );
 
 const MiniToolBtn = ({ icon: Icon, label, onClick, title }) => (
-    <button onClick={onClick} title={title || label} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/5 text-[10px] uppercase font-bold tracking-wider text-slate-400 hover:text-white transition-colors text-left w-full whitespace-nowrap">
-        <Icon size={12} />
-        <span>{label}</span>
+    <button
+        onClick={onClick}
+        title={title || label}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 text-[10px] uppercase font-bold tracking-wider text-slate-400 hover:text-white transition-all duration-200 text-left w-full whitespace-nowrap group"
+    >
+        <Icon size={14} className="group-hover:text-[#06B6D4] transition-colors" />
+        <span className="group-hover:translate-x-0.5 transition-transform">{label}</span>
     </button>
 );
 
@@ -845,10 +863,6 @@ const LineSpacingPickerPopup = ({ onSelect, onClose, position }) => {
                     <span className="text-sm font-medium">{opt.label}</span>
                 </button>
             ))}
-            <div className="h-px bg-white/10 my-1"></div>
-            <button className="flex items-center gap-3 w-full px-4 py-1.5 hover:bg-white/5 text-slate-300 hover:text-white transition-colors text-left">
-                <span className="text-xs">Другие варианты...</span>
-            </button>
 
             {/* Click overlay to close */}
             <div className="fixed inset-0 -z-10" onClick={onClose} />
@@ -868,6 +882,76 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
     const [activeTextEffectsPicker, setActiveTextEffectsPicker] = useState(null); // { position: {top, left} }
     const [activeLineSpacingPicker, setActiveLineSpacingPicker] = useState(null); // { position: {top, left} }
     const [showInvisibles, setShowInvisibles] = useState(false);
+    const [activeSortDialog, setActiveSortDialog] = useState(false);
+    const [isLoadingDoc, setIsLoadingDoc] = useState(false); // For loading state
+
+    // Load content from location state (DOCX) or default
+    useEffect(() => {
+        if (!contentRef.current) return;
+
+        const loadContent = async () => {
+            console.log("CabinetConstructor State:", location.state); // DEBUG
+
+            let fileData = location.state;
+
+            // Fallback to localStorage if state is missing
+            if (!fileData?.fileUrl) {
+                const storedId = localStorage.getItem('depa_active_file_id');
+                const storedFiles = localStorage.getItem('depa_vault_files');
+                if (storedId && storedFiles) {
+                    try {
+                        const files = JSON.parse(storedFiles);
+                        const found = files.find(f => f.id == storedId);
+                        if (found) {
+                            console.log("Recovered file from localStorage:", found);
+                            fileData = { fileUrl: found.url, title: found.name };
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse stored files", e);
+                    }
+                }
+            }
+
+            if (fileData?.fileUrl) {
+                setIsLoadingDoc(true);
+                try {
+                    console.log("Loading file from:", fileData.fileUrl);
+                    // Fetch blob from URL
+                    const response = await fetch(fileData.fileUrl);
+                    const arrayBuffer = await response.arrayBuffer();
+
+                    // Convert DOCX to HTML
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+
+                    if (result.value) {
+                        contentRef.current.innerHTML = result.value;
+                    } else {
+                        contentRef.current.innerHTML = `<div class="text-center text-gray-500 py-10">
+                            <h3 class="font-bold">Не удалось извлечь текст</h3>
+                            <p class="text-sm">Возможно, документ содержит только изображения или сложное форматирование, которое не поддерживается.</p>
+                            ${result.messages.length ? `<pre class="text-xs text-left bg-gray-100 p-2 mt-4 overflow-auto max-h-40">${JSON.stringify(result.messages, null, 2)}</pre>` : ''}
+                        </div>`;
+                    }
+
+                    if (fileData.title) {
+                        // Ideally update title state here if it existed
+                    }
+                } catch (error) {
+                    console.error("Error loading document:", error);
+                    contentRef.current.innerHTML = `<p class="text-red-500 p-4">Ошибка загрузки документа: ${error.message}</p>`;
+                } finally {
+                    setIsLoadingDoc(false);
+                }
+            } else {
+                // If content is empty/initial, load default
+                if (!contentRef.current.innerHTML.trim()) {
+                    contentRef.current.innerHTML = DEFAULT_CONTENT;
+                }
+            }
+        };
+
+        loadContent();
+    }, [location.state]);
 
 
     // Image Manipulation State
@@ -1333,9 +1417,58 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
         openTablePicker(e);
     };
 
+    // --- Sorting Logic ---
+    const handleApplySort = ({ sortBy, sortType, direction, hasHeader }) => {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        const content = range.extractContents();
+
+        // We assume we are sorting paragraphs/lines.
+        // If content contains block elements (p, div), we sort them.
+        // If text, we split by newline.
+
+        const children = Array.from(content.childNodes);
+
+        // Filter out empty text nodes that are just whitespace if we have blocks
+        const blocks = children.filter(n =>
+            (n.nodeType === 1) || (n.nodeType === 3 && n.textContent.trim().length > 0)
+        );
+
+        if (blocks.length === 0) return; // Nothing to sort
+
+        // Helper to get value
+        const getValue = (node) => node.textContent?.trim() || '';
+
+        blocks.sort((a, b) => {
+            let valA = getValue(a);
+            let valB = getValue(b);
+
+            if (sortType === 'number') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } else if (sortType === 'date') {
+                valA = new Date(valA).getTime() || 0;
+                valB = new Date(valB).getTime() || 0;
+            }
+
+            if (direction === 'asc') return valA > valB ? 1 : -1;
+            return valA < valB ? 1 : -1;
+        });
+
+        // Re-insert
+        range.deleteContents();
+        const fragment = document.createDocumentFragment();
+        blocks.forEach(b => fragment.appendChild(b));
+        range.insertNode(fragment);
+    };
+
     // --- Auto Pagination Logic ---
     const handlePagination = useCallback(() => {
         if (!contentRef.current) return;
+
+
 
         const editor = contentRef.current;
         const PAGE_HEIGHT_PX = 1123; // A4 height @ 96dpi (297mm)
@@ -1367,16 +1500,111 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
             const childHeight = child.offsetHeight + parseInt(style.marginTop || 0) + parseInt(style.marginBottom || 0);
 
             // Check if this child pushes us over the limit
+            // Check if this child pushes us over the limit
             if (currentHeight + childHeight > CONTENT_HEIGHT_PER_PAGE) {
-                // Insert visual break
+                const remainingHeight = CONTENT_HEIGHT_PER_PAGE - currentHeight;
+
+                // If the block is massive or we have decent space left, try to split it
+                // We barely split headers, mostly paragraphs
+                const isText = ['P', 'DIV', 'LI', 'SPAN'].includes(child.tagName) && child.childNodes.length > 0;
+
+                if (isText && childHeight > remainingHeight && remainingHeight > 20) { // Don't split if only 20px left
+                    // Attempt to split the node
+                    const clone = child.cloneNode(true);
+                    clone.style.visibility = 'hidden';
+                    clone.style.position = 'absolute';
+                    clone.style.width = getComputedStyle(child).width;
+                    editor.appendChild(clone);
+
+                    // Binary search for split point (character index)
+                    const text = child.innerText;
+                    let low = 0;
+                    let high = text.length;
+                    let splitIndex = -1;
+
+                    while (low <= high) {
+                        const mid = Math.floor((low + high) / 2);
+                        clone.innerText = text.substring(0, mid);
+                        if (clone.offsetHeight <= remainingHeight) {
+                            splitIndex = mid;
+                            low = mid + 1;
+                        } else {
+                            high = mid - 1;
+                        }
+                    }
+
+                    editor.removeChild(clone);
+
+                    // Ensure we split at a space to avoid cutting words
+                    let finalSplitIndex = splitIndex;
+                    if (splitIndex > 0 && splitIndex < text.length) {
+                        const lastSpace = text.lastIndexOf(' ', splitIndex);
+                        if (lastSpace > splitIndex - 20) { // Only go back if meaningful (e.g. within last 20 chars)
+                            finalSplitIndex = lastSpace;
+                        }
+                    }
+
+                    if (finalSplitIndex > 50 && finalSplitIndex < text.length - 10) { // Avoid tiny splits
+                        // Perform the split
+                        const part1Text = text.substring(0, finalSplitIndex);
+                        const part2Text = text.substring(finalSplitIndex);
+
+                        child.innerText = part1Text;
+
+                        const nextPart = child.cloneNode(true);
+                        nextPart.innerText = part2Text;
+
+                        // Insert break
+                        const separator = document.createElement('div');
+                        separator.className = 'page-separator';
+                        separator.contentEditable = 'false';
+
+                        editor.insertBefore(separator, child.nextSibling);
+                        editor.insertBefore(nextPart, separator.nextSibling);
+
+                        // Continue loop - nextPart will be processed in next iteration? 
+                        // No, we modify DOM, so we should probably restart or adjust 'i'
+                        // But for simplicity, we let the next loop run 'handlePagination' cleanly or just update current counters.
+                        // Actually, modifying DOM inside loop is dangerous. 
+                        // Better to just break and let the debounce trigger a re-run? 
+                        // Or fix list?
+
+                        // Safest: insert, and increment Loop index to hit 'nextPart' next
+                        // currentChildren is a static Array, so it won't see nextPart.
+                        // We must manually add it to our tracking or break and Recurse.
+
+                        // Let's just break page normally if split failed, but if split succeeded:
+                        // We effectively "finished" this page.
+                        currentHeight = 0;
+                        pCount++;
+
+                        // We need to process nextPart. Since currentChildren is not live, we can't.
+                        // Simple hack: We restart the whole function if we split? No, infinite loop risk.
+                        // Correct: We break content flow here. 'nextPart' is now in DOM after 'child'.
+                        // 'child' is resized.
+                        // The loop continues with NEXT original sibling. 
+                        // BUT 'nextPart' IS A NEW SIBLING that needs processing.
+
+                        // So we must stop providing 'currentChildren' as snapshot and use live traversal or updating array.
+                        currentChildren.splice(i + 1, 0, nextPart); // Insert into our todo list
+                        // i increment will hit start of nextPart (which is what we want... wait, loop i++ happens at end)
+                        // So at end of loop i becomes i+1 (which is nextPart). Perfect.
+                        // But we also inserted 'separator', so we need to skip it.
+                        // Index Order: child (i) -> separator (i+1) -> nextPart (i+2) -> oldSeparators...
+                        currentChildren.splice(i + 1, 0, separator);
+                        i += 1; // Skip the separator we just added (loop will do another +1 to hit nextPart)
+
+                        continue;
+                    }
+                }
+
+                // Standard Break (Fallthrough if split failed or inappropriate)
                 const separator = document.createElement('div');
                 separator.className = 'page-separator';
                 separator.contentEditable = 'false';
 
-                // Insert before this child
                 editor.insertBefore(separator, child);
 
-                // Reset height counter suitable for NEXT page
                 currentHeight = childHeight;
                 pCount++;
             } else {
@@ -1569,7 +1797,8 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                                 icon={Sparkles}
                                                 title="Текстовые эффекты"
                                                 onClick={openTextEffectsPicker}
-                                                className={`text-blue-400 ${activeTextEffectsPicker ? 'bg-white/20' : ''}`}
+                                                isActive={!!activeTextEffectsPicker}
+                                                className={`text-blue-400`}
                                             />
                                             {activeTextEffectsPicker && (
                                                 <TextEffectsPickerPopup
@@ -1586,7 +1815,8 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                                 icon={Highlighter}
                                                 onClick={(e) => openColorPicker(e, 'highlight')} // Pass event
                                                 title="Цвет выделения"
-                                                className={`border-b-2 border-yellow-400 rounded-none h-6 ${activeColorPicker?.type === 'highlight' ? 'bg-white/10' : ''}`}
+                                                isActive={activeColorPicker?.type === 'highlight'}
+                                                className={`border-b-2 border-yellow-400 rounded-none h-6`}
                                             />
                                             {activeColorPicker?.type === 'highlight' && (
                                                 <ColorPickerPopup
@@ -1602,7 +1832,8 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                                 icon={Baseline}
                                                 onClick={(e) => openColorPicker(e, 'text')}
                                                 title="Цвет текста"
-                                                className={`border-b-2 border-red-500 rounded-none h-6 ${activeColorPicker?.type === 'text' ? 'bg-white/10' : ''}`}
+                                                isActive={activeColorPicker?.type === 'text'}
+                                                className={`border-b-2 border-red-500 rounded-none h-6`}
                                             />
                                             {activeColorPicker?.type === 'text' && (
                                                 <ColorPickerPopup
@@ -1626,10 +1857,10 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                         <ToolBtn icon={ListOrdered} onClick={() => execCmd('insertOrderedList')} title="Нумерованный список" />
                                         <div className="relative">
                                             <ToolBtn
-                                                icon={List} // Can use a more specific icon if available, or keep generic
+                                                icon={List}
                                                 title="Многоуровневый список"
                                                 onClick={openListPicker}
-                                                className={activeListPicker ? 'bg-white/20' : ''}
+                                                isActive={!!activeListPicker}
                                             />
                                             {activeListPicker && (
                                                 <MultilevelListPickerPopup
@@ -1643,13 +1874,25 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                         <ToolBtn icon={IndentDecrease} onClick={() => execCmd('outdent')} title="Уменьшить отступ" />
                                         <ToolBtn icon={IndentIncrease} onClick={() => execCmd('indent')} title="Увеличить отступ" />
                                         <div className="w-px h-4 bg-white/10 mx-1"></div>
-                                        <ToolBtn icon={ArrowDownAZ} title="Сортировка" />
+                                        <div className="relative">
+                                            <ToolBtn
+                                                icon={ArrowDownAZ}
+                                                title="Сортировка"
+                                                onClick={() => setActiveSortDialog(true)}
+                                            />
+                                            {activeSortDialog && (
+                                                <SortDialog
+                                                    onClose={() => setActiveSortDialog(false)}
+                                                    onSort={handleApplySort}
+                                                />
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <ToolBtn
                                                 icon={ArrowUpDown}
                                                 title="Межстрочный интервал"
                                                 onClick={openLineSpacingPicker}
-                                                className={activeLineSpacingPicker ? 'bg-white/20' : ''}
+                                                isActive={!!activeLineSpacingPicker}
                                             />
                                             {activeLineSpacingPicker && (
                                                 <LineSpacingPickerPopup
@@ -1663,7 +1906,7 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                             icon={Pilcrow}
                                             title="Отобразить знаки"
                                             onClick={() => setShowInvisibles(!showInvisibles)}
-                                            className={showInvisibles ? 'bg-white/20 text-white shadow-inner' : ''}
+                                            isActive={showInvisibles}
                                         />
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -1676,10 +1919,10 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                                         <ToolBtn icon={PaintBucket} title="Заливка" />
                                         <div className="relative">
                                             <ToolBtn
-                                                icon={Grid}
-                                                title="Границы"
-                                                onClick={openBordersPicker}
-                                                className={activeBordersPicker ? 'bg-white/20' : ''}
+                                                icon={Table}
+                                                title="Таблица"
+                                                onClick={handleInsertTable}
+                                                isActive={!!activeTablePicker}
                                             />
                                             {activeBordersPicker && (
                                                 <BordersPickerPopup
@@ -1925,7 +2168,9 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                     className={`
                         bg-white text-slate-900 leading-relaxed relative transition-all duration-300 z-10 document-page
                         ${isManualMode ? 'outline-none ring-1 ring-[#06B6D4]/50 cursor-text' : 'cursor-default'}
+                        ${showInvisibles ? 'show-invisibles' : ''}
                         selection:bg-[#06B6D4]/30 selection:text-slate-900 font-serif
+                        [&>*:first-child]:mt-0
                     `}
                     style={{
                         ...getPageStyle(),
@@ -1936,154 +2181,38 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                         minHeight: `calc(${pageCount} * 297mm + ${(pageCount - 1) * 15}px)`
                     }}
                 >
-                    {/* Default Mock Content */}
-                    <div className="text-center font-bold mb-8 uppercase tracking-wider text-[16pt]">Договор оказания услуг</div>
-
-                    <div className="flex justify-between mb-8 text-[14pt]">
-                        <span>г. Москва</span>
-                        <span>«29» января 2026 г.</span>
-                    </div>
-
-                    <p className="mb-6 text-justify indent-8">
-                        Общество с ограниченной ответственностью <strong>«Вектор»</strong>, именуемое в дальнейшем «Заказчик», в лице Генерального директора Иванова И.И., действующего на основании Устава, с одной стороны, и
-                    </p>
-                    <p className="mb-6 text-justify indent-8">
-                        Индивидуальный предприниматель <strong>Петров П.П.</strong>, именуемый в дальнейшем «Исполнитель», действующий на основании Свидетельства о регистрации, с другой стороны, заключили настоящий Договор о нижеследующем:
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">1. Предмет договора</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        1.1. Исполнитель обязуется по заданию Заказчика оказать услуги по <span className="text-blue-900 bg-blue-50 px-1 rounded">юридическому сопровождению сделки</span>, а Заказчик обязуется оплатить эти услуги.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        1.2. Срок оказания услуг: с момента подписания до <strong>28 февраля 2026 г.</strong>
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">2. Стоимость услуг</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        2.1. Стоимость услуг составляет <strong>150 000 (Сто пятьдесят тысяч)</strong> рублей, НДС не облагается.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        2.2. Оплата производится в течение 3 (трех) банковских дней с момента подписания Акта.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">3. Ответственность</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        3.1. За нарушение сроков оплаты Заказчик уплачивает пени в размере 0.1% от суммы за каждый день просрочки.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">4. Права и обязанности сторон</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        4.1. Заказчик обязан предоставить Исполнителю всю необходимую документацию и информацию для выполнения услуг в течение 2 (двух) рабочих дней с момента подписания настоящего Договора.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        4.2. Исполнитель обязуется оказывать услуги качественно, в установленные сроки, с соблюдением требований действующего законодательства Российской Федерации.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        4.3. Заказчик имеет право требовать от Исполнителя предоставления отчетов о ходе выполнения работ не чаще одного раза в неделю.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        4.4. Исполнитель имеет право привлекать третьих лиц для оказания услуг по настоящему Договору, оставаясь ответственным перед Заказчиком за их действия.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">5. Порядок сдачи и приемки работ</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        5.1. По завершении оказания услуг Исполнитель направляет Заказчику Акт выполненных работ в течение 3 (трех) рабочих дней.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        5.2. Заказчик обязан рассмотреть Акт и направить мотивированный отказ либо подписанный Акт в течение 5 (пяти) рабочих дней с момента получения.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        5.3. В случае непредставления мотивированного отказа в указанный срок, услуги считаются принятыми Заказчиком в полном объеме без замечаний.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">6. Конфиденциальность</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        6.1. Стороны обязуются сохранять конфиденциальность информации, полученной в ходе исполнения настоящего Договора, и не разглашать ее третьим лицам без письменного согласия другой Стороны.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        6.2. Обязательство по сохранению конфиденциальности действует в течение 3 (трех) лет с момента прекращения действия настоящего Договора.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">7. Форс-мажор</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        7.1. Стороны освобождаются от ответственности за частичное или полное неисполнение обязательств по настоящему Договору, если это неисполнение явилось следствием обстоятельств непреодолимой силы (форс-мажор).
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        7.2. К обстоятельствам непреодолимой силы относятся: стихийные бедствия, военные действия, акты государственных органов, забастовки и иные обстоятельства, находящиеся вне контроля Сторон.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">8. Разрешение споров</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        8.1. Все споры и разногласия, возникающие из настоящего Договора или в связи с ним, разрешаются путем переговоров между Сторонами.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        8.2. В случае невозможности разрешения споров путем переговоров, они подлежат рассмотрению в Арбитражном суде города Москвы в соответствии с действующим законодательством Российской Федерации.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">9. Срок действия и порядок расторжения договора</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        9.1. Настоящий Договор вступает в силу с момента его подписания Сторонами и действует до полного исполнения Сторонами своих обязательств.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        9.2. Договор может быть расторгнут по соглашению Сторон, а также в одностороннем порядке в случаях, предусмотренных действующим законодательством.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        9.3. При досрочном расторжении Договора по инициативе Заказчика, Заказчик обязан оплатить фактически оказанные услуги в полном объеме.
-                    </p>
-
-                    <h3 className="font-bold mt-8 mb-4 text-[16pt]">10. Заключительные положения</h3>
-                    <p className="mb-4 text-justify indent-8">
-                        10.1. Настоящий Договор составлен в двух экземплярах, имеющих одинаковую юридическую силу, по одному для каждой из Сторон.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        10.2. Все изменения и дополнения к настоящему Договору действительны только в случае, если они совершены в письменной форме и подписаны уполномоченными представителями Сторон.
-                    </p>
-                    <p className="mb-4 text-justify indent-8">
-                        10.3. Во всем остальном, что не предусмотрено настоящим Договором, Стороны руководствуются действующим законодательством Российской Федерации.
-                    </p>
-
-                    <h3 className="font-bold mt-12 mb-6 text-[16pt]">11. Реквизиты и подписи сторон</h3>
-
-                    <div className="grid grid-cols-2 gap-8 mt-8">
-                        <div>
-                            <p className="font-bold mb-2">ЗАКАЗЧИК:</p>
-                            <p className="mb-1">ООО «Вектор»</p>
-                            <p className="mb-1 text-sm">ИНН: 7701234567</p>
-                            <p className="mb-1 text-sm">КПП: 770101001</p>
-                            <p className="mb-1 text-sm">ОГРН: 1027700123456</p>
-                            <p className="mb-1 text-sm">Адрес: 123456, г. Москва, ул. Примерная, д. 1</p>
-                            <p className="mb-1 text-sm">Р/с: 40702810100000000001</p>
-                            <p className="mb-1 text-sm">Банк: ПАО «Сбербанк»</p>
-                            <p className="mb-1 text-sm">БИК: 044525225</p>
-                            <p className="mb-1 text-sm">К/с: 30101810400000000225</p>
-                            <div className="mt-8 border-b border-slate-400 w-48"></div>
-                            <p className="text-sm mt-1">Генеральный директор Иванов И.И.</p>
-                        </div>
-                        <div>
-                            <p className="font-bold mb-2">ИСПОЛНИТЕЛЬ:</p>
-                            <p className="mb-1">ИП Петров Петр Петрович</p>
-                            <p className="mb-1 text-sm">ИНН: 770123456789</p>
-                            <p className="mb-1 text-sm">ОГРНИП: 304770000123456</p>
-                            <p className="mb-1 text-sm">Адрес: 123456, г. Москва, ул. Образцовая, д. 2</p>
-                            <p className="mb-1 text-sm">Р/с: 40802810200000000002</p>
-                            <p className="mb-1 text-sm">Банк: ПАО «Сбербанк»</p>
-                            <p className="mb-1 text-sm">БИК: 044525225</p>
-                            <p className="mb-1 text-sm">К/с: 30101810400000000225</p>
-                            <div className="mt-8 border-b border-slate-400 w-48"></div>
-                            <p className="text-sm mt-1">ИП Петров П.П.</p>
-                        </div>
-                    </div>
-
                 </div>
             </div>
+
+
             {/* Image Control Overlay */}
-            {activeImage && (
-                <ImageControlOverlay imageRef={activeImage} onClose={() => setActiveImage(null)} scrollContainerRef={scrollContainerRef} />
-            )}
-        </div>
+            {
+                activeImage && (
+                    <ImageControlOverlay imageRef={activeImage} onClose={() => setActiveImage(null)} scrollContainerRef={scrollContainerRef} />
+                )
+            }
+        </div >
     );
 };
+
+// --- DEFAULT CONTENT TEMPLATE ---
+const DEFAULT_CONTENT = `
+    <div class="text-center font-bold mb-8 uppercase tracking-wider text-[16pt]">Договор оказания услуг</div>
+    <div class="flex justify-between mb-8 text-[14pt]">
+        <span>г. Москва</span>
+        <span>«29» января 2026 г.</span>
+    </div>
+    <p class="mb-6 text-justify indent-8">
+        Общество с ограниченной ответственностью <strong>«Вектор»</strong>, именуемое в дальнейшем «Заказчик», в лице Генерального директора Иванова И.И., действующего на основании Устава, с одной стороны, и
+    </p>
+    <p class="mb-6 text-justify indent-8">
+        Индивидуальный предприниматель <strong>Петров П.П.</strong>, именуемый в дальнейшем «Исполнитель», действующий на основании Свидетельства о регистрации, с другой стороны, заключили настоящий Договор о нижеследующем:
+    </p>
+    <h3 class="font-bold mt-8 mb-4 text-[16pt]">1. Предмет договора</h3>
+    <p class="mb-4 text-justify indent-8">
+        1.1. Исполнитель обязуется по заданию Заказчика оказать услуги по <span class="text-blue-900 bg-blue-50 px-1 rounded">юридическому сопровождению сделки</span>, а Заказчик обязуется оплатить эти услуги.
+    </p>
+`;
 
 // --- Main Component ---
 const CabinetConstructor = () => {
