@@ -18,21 +18,36 @@ export const AuthProvider = ({ children }) => {
         }
 
         try {
-            const userData = await AuthService.getCurrentUser();
-            // Force role for known lawyer account if backend fails to send it
-            if (userData.email === 'lawyer@depa.ai') {
-                console.log('[AuthContext] Forcing lawyer role for:', userData.email);
-                // Create a new object to avoid mutation issues
-                userData = { ...userData, role: 'lawyer' };
+            let userData = await AuthService.getCurrentUser();
+
+            // Mock: Override email from localStorage if set (to support role switching)
+            const mockEmail = localStorage.getItem('mock_email');
+            if (mockEmail) {
+                userData = { ...userData, email: mockEmail };
             }
-            if (userData.email === 'client@depa.ai') {
+
+            // Force roles based on email
+            if (userData.email === 'lawyer@depa.ai') {
+                console.log('[AuthContext] Forcing lawyer role');
+                userData = { ...userData, role: 'lawyer', first_name: 'Роман', last_name: 'Юрист' };
+            } else if (userData.email === 'admin@depa.ai') {
+                console.log('[AuthContext] Forcing admin role');
+                userData = { ...userData, role: 'admin', first_name: 'Сергей', last_name: 'Админ' };
+            } else if (userData.email === 'director@depa.ai') {
+                userData = { ...userData, role: 'director', first_name: 'Владимир', last_name: 'Директор' };
+            }
+
+            // Default client subscription
+            if (!userData.role || userData.role === 'client') {
                 userData = { ...userData, subscription_status: 'active' };
             }
+
             setUser(userData);
             return userData;
         } catch (err) {
             // Token likely expired and refresh in axios interceptor failed
             AuthService.logout();
+            localStorage.removeItem('mock_email');
             setUser(null);
             return null;
         } finally {
@@ -46,15 +61,17 @@ export const AuthProvider = ({ children }) => {
 
         try {
             await AuthService.login(email, password);
-            const userResponse = await AuthService.getCurrentUser();
-            if (userResponse.email === 'lawyer@depa.ai') {
-                userResponse.role = 'lawyer';
+
+            // Mock: Store email to persist role
+            if (email.includes('@depa.ai')) {
+                localStorage.setItem('mock_email', email);
+            } else {
+                localStorage.removeItem('mock_email');
             }
-            if (userResponse.email === 'client@depa.ai') {
-                userResponse.subscription_status = 'active';
-            }
-            setUser(userResponse);
-            setIsLoading(false);
+
+            // Fetch user immediately to get the patched object
+            const userResponse = await fetchUser();
+
             return { success: true, user: userResponse };
         } catch (err) {
             setIsLoading(false);
@@ -138,6 +155,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = useCallback(() => {
         AuthService.logout();
+        localStorage.removeItem('mock_email');
         setUser(null);
         setError(null);
         // We might want to clear other application state here

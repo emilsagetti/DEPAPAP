@@ -7,11 +7,24 @@ const PricingSlider = ({ min = 0, max = 100, step = 1, value, onChange }) => {
     const x = useMotionValue(0);
     const [width, setWidth] = useState(0);
 
-    // Measure track width
+    // Measure track width and keep it updated
     useEffect(() => {
-        if (constraintsRef.current) {
-            setWidth(constraintsRef.current.offsetWidth);
-        }
+        if (!constraintsRef.current) return;
+
+        const updateWidth = () => {
+            if (constraintsRef.current) {
+                setWidth(constraintsRef.current.offsetWidth);
+            }
+        };
+
+        // Initial measure
+        updateWidth();
+
+        // Observe resize
+        const observer = new ResizeObserver(updateWidth);
+        observer.observe(constraintsRef.current);
+
+        return () => observer.disconnect();
     }, []);
 
     // Sync external value -> slider position

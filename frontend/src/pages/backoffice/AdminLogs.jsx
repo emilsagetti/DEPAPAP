@@ -5,6 +5,7 @@ import {
     FileText, Trash2, Edit, Eye, Search, Filter,
     ChevronDown, Download, Calendar, Shield
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const AdminLogs = () => {
     const [filter, setFilter] = useState('all');
@@ -35,8 +36,8 @@ const AdminLogs = () => {
 
     const filteredLogs = logs.filter(log => {
         if (filter !== 'all' && log.type !== filter) return false;
-        if (searchQuery && !log.action.toLowerCase().includes(searchQuery.toLowerCase()) &&
-            !log.user.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        if (searchQuery && !TrigramSearchService.match(log.action, searchQuery) &&
+            !TrigramSearchService.match(log.user, searchQuery)) return false;
         return true;
     });
 

@@ -5,6 +5,7 @@ import {
     MoreVertical, Mail, Phone, Calendar,
     TrendingUp, Award, Clock, Search, Plus
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const DirectorTeam = () => {
     const [selectedMember, setSelectedMember] = useState(null);
@@ -78,7 +79,7 @@ const DirectorTeam = () => {
 
     const filteredTeam = team.filter(m => {
         if (filterRole !== 'all' && m.role !== filterRole) return false;
-        if (searchQuery && !m.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        if (searchQuery && !TrigramSearchService.match(m.name, searchQuery)) return false;
         return true;
     });
 

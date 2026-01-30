@@ -5,6 +5,7 @@ import {
     UserCheck, UserX, MoreVertical, ChevronDown,
     Eye, Ban, Trash2, X, Check, BadgeCheck
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const AdminUsers = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -72,8 +73,8 @@ const AdminUsers = () => {
     const filteredUsers = users
         .filter(user => roleFilter === 'all' || user.role === roleFilter)
         .filter(user =>
-            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchQuery.toLowerCase())
+            TrigramSearchService.match(user.name, searchQuery) ||
+            TrigramSearchService.match(user.email, searchQuery)
         );
 
     const handleBlockUser = (user) => {

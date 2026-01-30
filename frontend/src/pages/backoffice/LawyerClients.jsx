@@ -5,6 +5,7 @@ import {
     Search, User, Building2, Mail, Phone,
     MessageSquare, FileText, ChevronDown, MoreHorizontal
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const LawyerClients = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,9 +60,9 @@ const LawyerClients = () => {
     ];
 
     const filteredClients = clients.filter(client =>
-        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchQuery.toLowerCase())
+        TrigramSearchService.match(client.name, searchQuery) ||
+        TrigramSearchService.match(client.company, searchQuery) ||
+        TrigramSearchService.match(client.email, searchQuery)
     );
 
     return (

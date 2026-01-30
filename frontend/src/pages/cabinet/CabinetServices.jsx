@@ -7,6 +7,7 @@ import CabinetPageHeader from '../../components/common/CabinetPageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
 import { useAuth } from '../../context/AuthContext';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 // Map backend statuses to frontend labels/colors (if needed)
 // Assuming backend returns keys like 'in_progress' which matched our mock keys previously
@@ -49,7 +50,9 @@ const CabinetServices = () => {
 
     // Filter logic
     const filteredServices = services.filter(service => {
-        const matchesSearch = (service.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+        // Old simple search: const matchesSearch = (service.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+        // New Fuzzy Search
+        const matchesSearch = TrigramSearchService.match(service.title, searchQuery);
 
         let matchesTab = true;
         if (activeTab === 'active') {
@@ -95,8 +98,8 @@ const CabinetServices = () => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`relative px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === tab.id
-                                            ? 'text-white shadow-lg'
-                                            : 'text-white/50 hover:text-white hover:bg-white/5'
+                                        ? 'text-white shadow-lg'
+                                        : 'text-white/50 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
                                     {activeTab === tab.id && (

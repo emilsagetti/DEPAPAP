@@ -14,6 +14,8 @@ import {
     RectangleVertical, Columns as ColumnsIcon, Scissors as ScissorsIcon, MoveVertical,
     ArrowLeftToLine, ArrowRightToLine, File as FileIcon, Settings2
 } from 'lucide-react';
+import { asBlob } from 'html-docx-js-typescript';
+import { saveAs } from 'file-saver';
 
 // --- Subcomponents ---
 
@@ -187,6 +189,67 @@ const AssistantPanel = ({
                 </div>
             </div>
         </div>
+    );
+};
+
+// --- Save Options Modal ---
+const SaveOptionsModal = ({ onClose, onSaveStorage, onSaveWord, onSavePdf, position }) => {
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-[#1E293B] border border-white/10 rounded-2xl p-6 w-[400px] shadow-2xl transform scale-100 transition-all" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-white">Сохранить документ</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-3">
+                    <button
+                        onClick={onSaveStorage}
+                        className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-xl transition-all group text-left"
+                    >
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                            <Save size={20} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-bold text-white">Хранилище документов</div>
+                            <div className="text-xs text-slate-400">Сохранить в личный кабинет</div>
+                        </div>
+                        <ChevronRight size={16} className="ml-auto text-slate-500 group-hover:text-white transition-colors" />
+                    </button>
+
+                    <button
+                        onClick={onSaveWord}
+                        className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-xl transition-all group text-left"
+                    >
+                        <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            <FileIcon size={20} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-bold text-white">Word (.docx)</div>
+                            <div className="text-xs text-slate-400">Скачать файл для редактирования</div>
+                        </div>
+                        <ChevronRight size={16} className="ml-auto text-slate-500 group-hover:text-white transition-colors" />
+                    </button>
+
+                    <button
+                        onClick={onSavePdf}
+                        className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-xl transition-all group text-left"
+                    >
+                        <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                            <Download size={20} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-bold text-white">PDF документ</div>
+                            <div className="text-xs text-slate-400">Скачать версию для печати</div>
+                        </div>
+                        <ChevronRight size={16} className="ml-auto text-slate-500 group-hover:text-white transition-colors" />
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 };
 
@@ -824,6 +887,8 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
         indents: { left: 0, right: 0 }, // cm
         spacing: { before: 0, after: 0 } // pt
     });
+    // Pagination state
+    const [pageCount, setPageCount] = useState(1);
 
     // Helper to calculate main style
     const getPageStyle = () => {
@@ -854,7 +919,13 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
             style.columnGap = pageSettings.columnGap;
         }
 
-        return style;
+        return {
+            ...style,
+            // Expose margins as CSS variables for the separator
+            '--page-padding-left': pageSettings.margins.split(' ')[3] || '3cm',
+            '--page-padding-right': pageSettings.margins.split(' ')[1] || '1.5cm',
+            '--page-padding-x': `calc(${pageSettings.margins.split(' ')[3] || '3cm'} + ${pageSettings.margins.split(' ')[1] || '1.5cm'})`
+        };
     };
 
 
@@ -917,6 +988,8 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
             onTextSelection(selection.toString(), rect, range);
+        } else {
+            onTextSelection('', null, null);
         }
     };
 
@@ -1260,6 +1333,75 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
         openTablePicker(e);
     };
 
+    // --- Auto Pagination Logic ---
+    const handlePagination = useCallback(() => {
+        if (!contentRef.current) return;
+
+        const editor = contentRef.current;
+        const PAGE_HEIGHT_PX = 1123; // A4 height @ 96dpi (297mm)
+        // 2cm margins top/bottom
+        const MARGIN_TOP_PX = 75;
+        const MARGIN_BOTTOM_PX = 75;
+        const CONTENT_HEIGHT_PER_PAGE = PAGE_HEIGHT_PX - MARGIN_TOP_PX - MARGIN_BOTTOM_PX;
+
+        // Remove existing separators to recalculate
+        const existingSeparators = editor.querySelectorAll('.page-separator');
+        existingSeparators.forEach(sep => sep.remove());
+
+        // We act on "pure" content flow for now.
+        // Complex logic would be needed to preserve strict text flow, 
+        // but for now we simply insert breaks where content exceeds visual height.
+
+        let currentHeight = 0;
+        let pCount = 1;
+
+        // Re-query children after removal
+        const currentChildren = Array.from(editor.children);
+
+        for (let i = 0; i < currentChildren.length; i++) {
+            const child = currentChildren[i];
+            // Skip if it's a separator we just added
+            if (child.classList.contains('page-separator')) continue;
+
+            const style = getComputedStyle(child);
+            const childHeight = child.offsetHeight + parseInt(style.marginTop || 0) + parseInt(style.marginBottom || 0);
+
+            // Check if this child pushes us over the limit
+            if (currentHeight + childHeight > CONTENT_HEIGHT_PER_PAGE) {
+                // Insert visual break
+                const separator = document.createElement('div');
+                separator.className = 'page-separator';
+                separator.contentEditable = 'false';
+
+                // Insert before this child
+                editor.insertBefore(separator, child);
+
+                // Reset height counter suitable for NEXT page
+                currentHeight = childHeight;
+                pCount++;
+            } else {
+                currentHeight += childHeight;
+            }
+        }
+
+        setPageCount(prev => prev !== pCount ? pCount : prev);
+
+        // We might want to save/restore cursor if this runs on Input
+    }, []);
+
+    // Debounce pagination to avoid cursor jumping madness
+    useEffect(() => {
+        const timeout = setTimeout(handlePagination, 1000);
+        return () => clearTimeout(timeout);
+    }, [handlePagination]); // Trigger on mount/updates? Maybe too aggressive.
+
+    // Better: Trigger on content change via MutationObserver or Input event
+    const handleInput = () => {
+        // Simple debounce
+        if (window.paginationTimeout) clearTimeout(window.paginationTimeout);
+        window.paginationTimeout = setTimeout(handlePagination, 500);
+    };
+
 
     return (
         <div className="flex-1 bg-[#0F172A] overflow-hidden flex flex-col relative w-full">
@@ -1306,6 +1448,35 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                 .document-page ul { list-style-type: disc; padding-left: 2em; margin-bottom: 1em; }
                 .document-page ol { list-style-type: decimal; padding-left: 2em; margin-bottom: 1em; }
                 .document-page li { margin-bottom: 0.25em; }
+
+                /* Page Separator Style - Word-like Separation */
+                .page-separator {
+                    display: block;
+                    
+                    /* The Visual Gap (Grey Strip) */
+                    height: 15px; 
+                    background-color: #f1f5f9; /* Matching desk bg */
+                    
+                    /* Simulating Margins (White Space) */
+                    /* Container is bg-white, so margins appear white */
+                    margin-top: 75px; 
+                    margin-bottom: 75px; 
+
+                    /* Borders to demarcate actual paper edges */
+                    border-top: 1px solid #e2e8f0;
+                    border-bottom: 1px solid #e2e8f0;
+
+                    /* Full Width Cover */
+                    width: calc(100% + var(--page-padding-left) + var(--page-padding-right));
+                    margin-left: calc(-1 * var(--page-padding-left));
+                    margin-right: calc(-1 * var(--page-padding-right));
+                    
+                    pointer-events: none;
+                    user-select: none;
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                    position: relative;
+                }
             `}</style>
             {/* Hidden Inputs */}
             <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleInsertImage} />
@@ -1526,41 +1697,65 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
 
                             {/* Group 4: Insert (Functional) */}
                             <ToolbarGroup label="Вставка">
-                                <div className="flex gap-2 h-full items-center px-1">
-                                    <button
-                                        onClick={handleInsertLink}
-                                        className="flex flex-col items-center justify-center px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group h-full"
-                                        title="Ссылка"
-                                    >
-                                        <Link size={18} className="mb-0.5 group-active:scale-95 transition-transform" />
-                                        <span className="text-[10px] font-medium leading-none">Ссылка</span>
-                                    </button>
-                                    <div className="w-px h-6 bg-white/5 my-auto"></div>
-                                    <button
-                                        onClick={() => imageInputRef.current?.click()}
-                                        className="flex flex-col items-center justify-center px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group h-full"
-                                        title="Изображение"
-                                    >
-                                        <ImageIcon size={18} className="mb-0.5 group-active:scale-95 transition-transform" />
-                                        <span className="text-[10px] font-medium leading-none">Фото</span>
-                                    </button>
-                                    <div className="w-px h-6 bg-white/5 my-auto"></div>
-                                    <div className="relative h-full">
+                                <div className="flex flex-col h-full py-1 justify-between px-1">
+                                    {/* Top Row: Main Actions */}
+                                    <div className="flex gap-1 items-center h-[32px]">
                                         <button
-                                            onClick={handleInsertTable}
-                                            className={`flex flex-col items-center justify-center px-3 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group h-full ${activeTablePicker ? 'bg-white/10' : ''}`}
-                                            title="Таблица"
+                                            onClick={handleInsertLink}
+                                            className="flex flex-col items-center justify-center px-2 w-10 py-0.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group h-full"
+                                            title="Ссылка"
                                         >
-                                            <Grid size={18} className="mb-0.5 group-active:scale-95 transition-transform" />
-                                            <span className="text-[10px] font-medium leading-none">Таблица</span>
+                                            <Link size={14} className="mb-0.5 group-active:scale-95 transition-transform" />
+                                            <span className="text-[9px] font-medium leading-none">Ссылка</span>
                                         </button>
-                                        {activeTablePicker && (
-                                            <TablePickerPopup
-                                                position={activeTablePicker.position}
-                                                onSelect={applyTable}
-                                                onClose={() => setActiveTablePicker(null)}
-                                            />
-                                        )}
+                                        <div className="w-px h-4 bg-white/5 my-auto"></div>
+                                        <button
+                                            onClick={() => imageInputRef.current?.click()}
+                                            className="flex flex-col items-center justify-center px-2 w-10 py-0.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group h-full"
+                                            title="Изображение"
+                                        >
+                                            <ImageIcon size={14} className="mb-0.5 group-active:scale-95 transition-transform" />
+                                            <span className="text-[9px] font-medium leading-none">Фото</span>
+                                        </button>
+                                        <div className="w-px h-4 bg-white/5 my-auto"></div>
+                                        <div className="relative h-full">
+                                            <button
+                                                onClick={handleInsertTable}
+                                                className={`flex flex-col items-center justify-center px-2 w-10 py-0.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group h-full ${activeTablePicker ? 'bg-white/10' : ''}`}
+                                                title="Таблица"
+                                            >
+                                                <Grid size={14} className="mb-0.5 group-active:scale-95 transition-transform" />
+                                                <span className="text-[9px] font-medium leading-none">Табл.</span>
+                                            </button>
+                                            {activeTablePicker && (
+                                                <TablePickerPopup
+                                                    position={activeTablePicker.position}
+                                                    onSelect={applyTable}
+                                                    onClose={() => setActiveTablePicker(null)}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom Row: Undo/Redo */}
+                                    <div className="flex gap-2 items-center justify-center h-[24px] border-t border-white/5 pt-0.5">
+                                        <button
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => document.execCommand('undo')}
+                                            className="w-12 h-full flex items-center justify-center rounded hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+                                            title="Отменить действие"
+                                        >
+                                            <Undo size={14} />
+                                        </button>
+                                        <div className="w-px h-3 bg-white/5"></div>
+                                        <button
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => document.execCommand('redo')}
+                                            className="w-12 h-full flex items-center justify-center rounded hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+                                            title="Повторить действие"
+                                        >
+                                            <Redo size={14} />
+                                        </button>
                                     </div>
                                 </div>
                             </ToolbarGroup>
@@ -1726,12 +1921,20 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                     suppressContentEditableWarning={true}
                     onMouseUp={handleMouseUp}
                     onClick={handleEditorClick}
+                    onInput={handleInput}
                     className={`
-                        bg-white text-slate-900 shadow-[0_0_50px_rgba(0,0,0,0.5)] leading-relaxed relative transition-all duration-300 z-10 document-page
+                        bg-white text-slate-900 leading-relaxed relative transition-all duration-300 z-10 document-page
                         ${isManualMode ? 'outline-none ring-1 ring-[#06B6D4]/50 cursor-text' : 'cursor-default'}
                         selection:bg-[#06B6D4]/30 selection:text-slate-900 font-serif
                     `}
-                    style={getPageStyle()}
+                    style={{
+                        ...getPageStyle(),
+                        // Remove gradient, rely on white background + separators
+                        // Calculate min-height to ensure last page is full A4
+                        // A4 height (297mm) * pages + Gap (15px) * (pages - 1)
+                        // Actually, simplify: Just ensure it's tall enough.
+                        minHeight: `calc(${pageCount} * 297mm + ${(pageCount - 1) * 15}px)`
+                    }}
                 >
                     {/* Default Mock Content */}
                     <div className="text-center font-bold mb-8 uppercase tracking-wider text-[16pt]">Договор оказания услуг</div>
@@ -1872,8 +2075,6 @@ const DocumentEditor = ({ isManualMode, onTextSelection, contentRef }) => {
                         </div>
                     </div>
 
-                    {/* Pagination Mock */}
-                    <div className="absolute bottom-8 right-8 text-xs text-slate-400 font-mono">Стр. 1 из 3</div>
                 </div>
             </div>
             {/* Image Control Overlay */}
@@ -1903,20 +2104,50 @@ const CabinetConstructor = () => {
     };
 
     const handleSendMessage = (text) => {
-        setMessages(prev => [...prev, { role: 'user', content: text }]);
+        // ... (existing logic, assuming it will be closed by the user later or is existing)
         setIsThinking(true);
-
-        // Mock AI Response
-        setTimeout(() => {
-            setIsThinking(false);
-            setMessages(prev => [...prev, {
-                role: 'ai',
-                content: 'Я могу переформулировать этот фрагмент. Вот более формальный вариант:',
-                suggestion: 'В соответствии с условиями настоящего Договора, Исполнитель обязуется оказать Заказчику весь спектр консалтинговых услуг.'
-            }]);
-        }, 1500);
+        handleAIAction(text); // Reuse existing AI action logic
     };
 
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+
+    const handleSaveWord = async () => {
+        console.log("Starting Word export...");
+        if (!contentRef.current) return;
+
+        const content = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.5; }
+                    h1, h2, h3 { font-weight: bold; }
+                    p { margin-bottom: 1em; }
+                    ul, ol { margin-bottom: 1em; padding-left: 2em; }
+                </style>
+            </head>
+            <body>
+                ${contentRef.current.innerHTML}
+            </body>
+            </html>
+        `;
+
+        try {
+            const blob = await asBlob(content, {
+                orientation: 'portrait',
+                margins: { top: 720, right: 720, bottom: 720, left: 720 } // twips
+            });
+            saveAs(blob, 'document.docx');
+        } catch (error) {
+            console.error('Error saving Word document:', error);
+            alert('Ошибка при сохранении документа Word');
+        }
+    };
+
+    const handleSavePdf = () => {
+        window.print();
+    };
     // AI Context actions from Floating Menu
     const handleAIAction = (action) => {
         setIsThinking(true);
@@ -1993,15 +2224,34 @@ const CabinetConstructor = () => {
 
                         <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
 
-                        <div className="flex gap-2">
-                            <button className="flex items-center gap-2 px-4 py-2 bg-[#1E293B] hover:bg-[#334155] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                        <div className="flex gap-2 relative">
+                            <button
+                                onClick={() => setIsSaveModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-[#1E293B] hover:bg-[#334155] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                            >
                                 <Save size={16} />
                                 Сохранить
                             </button>
-                            <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white text-xs font-bold rounded-xl shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all transform hover:-translate-y-0.5 border border-emerald-400/20">
-                                <Download size={16} />
-                                Скачать PDF
-                            </button>
+
+                            {isSaveModalOpen && (
+                                <SaveOptionsModal
+                                    onClose={() => setIsSaveModalOpen(false)}
+                                    onSaveStorage={() => {
+                                        console.log('Save to storage');
+                                        setIsSaveModalOpen(false);
+                                        alert('Документ сохранен в хранилище');
+                                    }}
+                                    onSaveWord={() => {
+                                        handleSaveWord();
+                                        setIsSaveModalOpen(false);
+                                    }}
+                                    onSavePdf={() => {
+                                        handleSavePdf();
+                                        setIsSaveModalOpen(false);
+                                    }}
+                                    position={{ top: 0, left: 0 }}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -2020,9 +2270,13 @@ const CabinetConstructor = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             style={{
+                                x: "-50%", // Force centering transform
                                 position: 'fixed',
                                 top: selectionRect.top - 60,
-                                left: selectionRect.left + (selectionRect.width / 2) - 160
+                                left: Math.max(180, Math.min(
+                                    selectionRect.left + (selectionRect.width / 2),
+                                    window.innerWidth - 180
+                                ))
                             }}
                             className="z-[100] bg-[#0F172A]/90 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-1.5 flex gap-1 backdrop-blur-xl ring-1 ring-white/5"
                         >

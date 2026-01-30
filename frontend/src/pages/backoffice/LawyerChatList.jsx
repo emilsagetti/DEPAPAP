@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter, Clock, CheckCheck, Circle, MessageSquare, MoreVertical } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const LawyerChatList = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -68,8 +69,8 @@ const LawyerChatList = () => {
             return true;
         })
         .filter(chat =>
-            chat.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            chat.company?.toLowerCase().includes(searchQuery.toLowerCase())
+            TrigramSearchService.match(chat.client, searchQuery) ||
+            TrigramSearchService.match(chat.company, searchQuery)
         );
 
     const totalUnread = chats.reduce((sum, chat) => sum + chat.unread, 0);

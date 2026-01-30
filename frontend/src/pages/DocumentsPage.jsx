@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, FileCheck, Search, Upload, Download, MoreVertical, Trash2, Edit3, FolderOpen } from 'lucide-react';
+import TrigramSearchService from '../utils/TrigramSearchService';
 
 const documents = [
     { id: 1, name: 'Устав ООО «Вектор».pdf', type: 'pdf', size: '1.2 MB', date: '10 янв 2026', addedBy: 'Анна С.', status: 'signed', category: 'contracts' },
@@ -31,7 +32,7 @@ const DocumentsPage = () => {
 
     const filteredDocs = documents.filter(doc => {
         const matchesCategory = activeCategory === 'all' || doc.category === activeCategory;
-        const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = TrigramSearchService.match(doc.name, searchQuery);
         return matchesCategory && matchesSearch;
     });
 

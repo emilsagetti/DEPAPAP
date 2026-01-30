@@ -5,6 +5,7 @@ import {
     Search, Plus, Edit, Trash2, Eye, ChevronDown,
     Calendar, Clock, User, Image, MoreVertical
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const CMSNewsList = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +58,7 @@ const CMSNewsList = () => {
     const filteredNews = news
         .filter(item => statusFilter === 'all' || item.status === statusFilter)
         .filter(item =>
-            item.title.toLowerCase().includes(searchQuery.toLowerCase())
+            TrigramSearchService.match(item.title, searchQuery)
         );
 
     const statusLabels = {

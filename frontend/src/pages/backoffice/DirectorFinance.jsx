@@ -6,6 +6,7 @@ import {
     FileText, CheckCircle, Clock, AlertCircle, Search
 } from 'lucide-react';
 import AnimatedCounter from '../../components/AnimatedCounter';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const DirectorFinance = () => {
     const [filter, setFilter] = useState('all');
@@ -39,8 +40,8 @@ const DirectorFinance = () => {
         if (filter === 'expense') return t.type === 'expense';
         return true;
     }).filter(t =>
-        t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.client.toLowerCase().includes(searchQuery.toLowerCase())
+        TrigramSearchService.match(t.description, searchQuery) ||
+        TrigramSearchService.match(t.client, searchQuery)
     );
 
     const statusColors = {

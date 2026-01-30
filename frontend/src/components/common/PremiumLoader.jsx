@@ -37,7 +37,7 @@ const PremiumLoader = ({ size = 'md', text = 'Загрузка...', fullScreen =
                         <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#06B6D4] to-[#8B5CF6] w-full animate-[shimmer_2s_infinite] -translate-x-full"
                             style={{ animation: 'shimmer 2s infinite linear' }}
                         />
-                        <style jsx>{`
+                        <style>{`
                             @keyframes shimmer {
                                 0% { transform: translateX(-100%); }
                                 100% { transform: translateX(100%); }

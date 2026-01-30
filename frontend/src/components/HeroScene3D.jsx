@@ -246,7 +246,9 @@ const HeroScene3D = () => {
                 <pointLight position={[5, -10, 5]} intensity={1} color="#ffffff" />
 
                 <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-                    <ClassicShield position={[0, 0.5, 0]} scale={0.7} />
+                    <group position={[0.5, 0.5, 0]}>
+                        <ClassicShield scale={0.7} />
+                    </group>
                 </Float>
 
                 <Environment preset="city" />

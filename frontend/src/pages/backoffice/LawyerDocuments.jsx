@@ -5,6 +5,7 @@ import {
     Folder, File, Eye, Plus, Filter, MoreVertical,
     FileSpreadsheet, Image, FileType, X
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const LawyerDocuments = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +42,7 @@ const LawyerDocuments = () => {
 
     const filteredDocs = documents.filter(doc => {
         if (selectedFolder !== 'all' && doc.folder !== selectedFolder) return false;
-        if (searchQuery && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        if (searchQuery && !TrigramSearchService.match(doc.name, searchQuery)) return false;
         return true;
     });
 

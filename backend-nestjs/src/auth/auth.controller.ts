@@ -31,7 +31,9 @@ export class AuthController {
             first_name: 'Demo',
             last_name: 'User',
             phone: '+79990000000',
-            company_name: 'LLC Demo'
+            company_name: 'LLC Demo',
+            subscription_status: 'active',
+            role: 'client'
         };
     }
 }

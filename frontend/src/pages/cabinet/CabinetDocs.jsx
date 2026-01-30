@@ -6,6 +6,7 @@ import DocsService from '../../api/docs.service';
 import CabinetPageHeader from '../../components/common/CabinetPageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import { useAuth } from '../../context/AuthContext';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const CabinetDocs = () => {
     const { user } = useAuth();
@@ -38,8 +39,8 @@ const CabinetDocs = () => {
 
     // Filter logic
     const filteredDocs = docs.filter(doc => {
-        const matchesSearch = (doc.title || doc.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = activeCategory === 'Все документы' || doc.category === activeCategory;
+        const matchesSearch = TrigramSearchService.match(doc.title, searchQuery);
+        const matchesCategory = activeCategory === 'all' || doc.category === activeCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -202,8 +203,8 @@ const CabinetDocs = () => {
                     {/* Drag & Drop Zone / List */}
                     <div
                         className={`glass-card rounded-[32px] min-h-[500px] flex flex-col transition-all duration-300 relative group overflow-hidden ${isDragging
-                                ? 'border-[#06B6D4] bg-[#06B6D4]/10 shadow-[0_0_50px_rgba(6,182,212,0.2)]'
-                                : 'border-white/5'
+                            ? 'border-[#06B6D4] bg-[#06B6D4]/10 shadow-[0_0_50px_rgba(6,182,212,0.2)]'
+                            : 'border-white/5'
                             }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}

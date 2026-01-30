@@ -4,6 +4,7 @@ import {
     FileText, Edit, Eye, Trash2, Plus, Search,
     Home, Info, Phone, Shield, HelpCircle, X, Save
 } from 'lucide-react';
+import TrigramSearchService from '../../utils/TrigramSearchService';
 
 const CMSPages = () => {
     const [selectedPage, setSelectedPage] = useState(null);
@@ -19,8 +20,8 @@ const CMSPages = () => {
     ];
 
     const filteredPages = pages.filter(p =>
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.slug.toLowerCase().includes(searchQuery.toLowerCase())
+        TrigramSearchService.match(p.title, searchQuery) ||
+        TrigramSearchService.match(p.slug, searchQuery)
     );
 
     const containerVariants = {
@@ -76,8 +77,8 @@ const CMSPages = () => {
                                 <page.icon size={24} className="text-slate-600" />
                             </div>
                             <span className={`text-xs font-medium px-2 py-1 rounded-full ${page.status === 'published'
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-amber-100 text-amber-700'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-amber-100 text-amber-700'
                                 }`}>
                                 {page.status === 'published' ? 'Опубликовано' : 'Черновик'}
                             </span>
